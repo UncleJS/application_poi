@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# env-check.sh — Validate that all required keys are present in .runtime/poi.env.
+#
+# Why it exists:
+#   Missing environment variables cause cryptic runtime failures deep inside
+#   containers.  This script catches the problem at the earliest opportunity —
+#   before any service is started — by loading the env file and checking each
+#   required key.  Called automatically by install.sh so every install is
+#   validated before the DB container even starts.
+#
+# Usage: ./scripts/env-check.sh
+#   Prints [OK] or [MISSING] for every required variable and exits non-zero
+#   if any are absent.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

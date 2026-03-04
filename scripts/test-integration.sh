@@ -1,4 +1,18 @@
 #!/usr/bin/env bash
+# test-integration.sh — End-to-end API integration test against the live stack.
+#
+# Why it exists:
+#   Unit tests cannot catch routing, auth, or database wiring problems that only
+#   manifest when the full stack is running together.  This script exercises the
+#   critical user journeys — login → token refresh → POI CRUD → photo upload →
+#   archive/restore → radius query — so regressions are caught before they reach
+#   production.  All test data is created and archived within the test run; no
+#   cleanup is needed.
+#
+# Usage: ./scripts/test-integration.sh
+#   Requires the full stack to be running.
+#   Set BASE_URL to test against a non-default host/port.
+#   Also called automatically on a nightly schedule by test-nightly.sh.
 set -euo pipefail
 
 # shellcheck disable=SC1091

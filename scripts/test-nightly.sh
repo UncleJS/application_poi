@@ -1,4 +1,18 @@
 #!/usr/bin/env bash
+# test-nightly.sh — Nightly wrapper that runs the integration suite and retains logs.
+#
+# Why it exists:
+#   Automated nightly validation catches silent regressions that would otherwise
+#   go unnoticed between manual deploys.  This wrapper adds log file management
+#   on top of test-integration.sh: each run produces a timestamped file in
+#   .runtime/logs/, a symlink to the latest run is updated, and old logs are
+#   pruned to NIGHTLY_LOG_RETAIN_COUNT (default 14) to control disk usage.
+#
+# Usage: ./scripts/test-nightly.sh
+#   Normally invoked by the poi-integration.timer systemd timer (02:45 daily).
+#   Run manually to confirm the nightly pipeline is working:
+#     systemctl --user start poi-integration.service
+#     cat .runtime/logs/integration_latest.log
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

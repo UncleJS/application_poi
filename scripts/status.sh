@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# status.sh — Show the active state of every POI service and running containers.
+#
+# Why it exists:
+#   A quick at-a-glance overview of the entire stack: core services, auxiliary
+#   timers (backup and integration), and the live Podman container list with
+#   port mappings.  Called at the end of install, rebuild, and restart so the
+#   operator always sees the result state without a separate command.
+#
+# Usage: ./scripts/status.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

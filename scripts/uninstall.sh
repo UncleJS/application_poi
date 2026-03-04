@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+# uninstall.sh — Remove all POI systemd units and optionally purge DB data.
+#
+# Why it exists:
+#   A clean uninstall requires stopping services, disabling them so they do not
+#   restart on login, and removing the installed unit files from the user systemd
+#   directory.  Leaving orphan unit files causes daemon-reload warnings.
+#
+# Usage:
+#   ./scripts/uninstall.sh              — stops and removes units, keeps DB volume
+#   ./scripts/uninstall.sh --purge-data — also deletes the poi-db-data volume
+#
+# Notes:
+#   --purge-data is irreversible.  Take a backup first: ./scripts/backup.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -25,7 +38,7 @@ done
 
 log "Removing Quadlet unit files"
 rm -f "${USER_QUADLET_DIR}/poi-"*.container
-rm -f "${USER_QUADLET_DIR}/poi.network" "${USER_QUADLET_DIR}/poi-db.volume"
+rm -f "${USER_QUADLET_DIR}/poi.pod" "${USER_QUADLET_DIR}/poi-db.volume"
 rm -f "${USER_SYSTEMD_DIR}/poi-backup.service" "${USER_SYSTEMD_DIR}/poi-backup.timer" "${USER_SYSTEMD_DIR}/poi-integration.service" "${USER_SYSTEMD_DIR}/poi-integration.timer"
 
 systemctl --user daemon-reload

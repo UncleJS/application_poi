@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# common.sh — Shared bootstrap for all lifecycle scripts.
+#
+# Why it exists:
+#   Every script in this directory needs the same resolved paths, the same list
+#   of managed services, and the same helper functions (log/warn/die, env loader,
+#   DB readiness probe).  Centralising these here means a single source of truth
+#   and avoids silent drift when services or directories are added.
+#
+# Usage: sourced at the top of other scripts — never executed directly.
+#   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

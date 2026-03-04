@@ -9,95 +9,148 @@
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
+- [Architecture Overview](#architecture-overview)
 - [Required Local Paths](#required-local-paths)
 - [Configure Environment](#configure-environment)
 - [Build Local Images](#build-local-images)
 - [Install Services](#install-services)
 - [Verify Installation](#verify-installation)
 - [First Login and Smoke Test](#first-login-and-smoke-test)
+- [phpMyAdmin Access](#phpmyadmin-access)
 - [Optional Docs Authentication](#optional-docs-authentication)
 
 ## Prerequisites
 - Linux user session with `systemd --user`
-- `podman` installed
+- `podman` >= 4.4 (Quadlet support required)
 - `systemctl` available
 - `curl` available for health checks
-- `python` available for integration scripts
+- `python` available for install and integration scripts
+
+[Go to TOC](#table-of-contents)
+
+## Architecture Overview
+
+All containers run inside a single **Podman pod** (`poi`).  Inside a pod,
+containers share one network namespace — they communicate over `127.0.0.1`
+using each other's port numbers.  The pod publishes one host port:
+
+```
+host: 127.0.0.1:9010  →  poi-proxy (Caddy) :9010
+```
+
+Caddy routes internal traffic:
+
+| Path prefix | Upstream |
+|---|---|
+| `/health`, `/api/*`, `/docs`, `/openapi.json`, `/auth/*` | `127.0.0.1:3001` (API) |
+| `/phpmyadmin*` | `127.0.0.1:80` (phpMyAdmin) |
+| everything else | `127.0.0.1:3000` (Next.js web) |
+
+Container units are managed by **Quadlet** — `.container` and `.pod` files in
+`infra/quadlet/` that systemd reads after `daemon-reload`.  The
+`__PROJECT_ROOT__` placeholder in `.container` files is substituted with the
+real project path during install.
 
 [Go to TOC](#table-of-contents)
 
 ## Required Local Paths
-- Runtime env file: `.runtime/poi.env`
-- Backup output directory: `.runtime/backups/`
-- Nightly integration logs: `.runtime/logs/`
-- User unit install location: `~/.config/systemd/user/`
-- User Quadlet location: `~/.config/containers/systemd/`
+
+| Path | Purpose |
+|---|---|
+| `.runtime/poi.env` | Runtime secrets and configuration (gitignored) |
+| `.runtime/backups/` | SQL dump output directory |
+| `.runtime/logs/` | Nightly integration test logs |
+| `~/.config/containers/systemd/` | Quadlet unit install location |
+| `~/.config/systemd/user/` | Auxiliary systemd unit install location |
 
 [Go to TOC](#table-of-contents)
 
 ## Configure Environment
-1. Create runtime config directory:
-   - `mkdir -p .runtime`
-2. Copy env template:
-   - `cp .env.example .runtime/poi.env`
-3. Edit required secrets and values in `.runtime/poi.env`.
-4. Keep `ADMIN_USER` and `ADMIN_PASSWORD` set for JWT login.
-5. Set `DOCS_AUTH_ENABLED=true` to protect `/docs` and `/openapi.json` with basic auth.
+
+1. Create the runtime directory and copy the template:
+
+```bash
+mkdir -p .runtime
+cp .env.example .runtime/poi.env
+```
+
+2. Edit `.runtime/poi.env` and set all secrets:
+   - `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `MARIADB_PASSWORD`, `MARIADB_ROOT_PASSWORD`
+   - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
+   - `ADMIN_USER`, `ADMIN_PASSWORD`
+   - `CORS_ORIGIN` — set to the host/port where the UI is served
+   - `DOCS_AUTH_ENABLED`, `DOCS_AUTH_USER`, `DOCS_AUTH_PASS` (optional)
+
+3. Validate the config:
+
+```bash
+./scripts/env-check.sh
+```
 
 [Go to TOC](#table-of-contents)
 
 ## Build Local Images
-Run:
 
 ```bash
 ./scripts/build.sh
 ```
 
-The script builds local images expected by Quadlet units:
-- `localhost/poi-api:latest`
-- `localhost/poi-web:latest`
-- `localhost/poi-proxy:latest`
+Builds three locally-tagged images used by the Quadlet units:
+- `localhost/poi-api:latest` — Bun/Elysia API
+- `localhost/poi-web:latest` — Next.js frontend
+- `localhost/poi-proxy:latest` — Caddy reverse proxy
 
 [Go to TOC](#table-of-contents)
 
 ## Install Services
-Run:
 
 ```bash
 ./scripts/install.sh
 ```
 
-This copies Quadlet files into `~/.config/containers/systemd`, reloads user systemd, and enables/starts all POI services.
-It also installs and enables backup and nightly integration timers.
+This single command:
+1. Validates prerequisites and environment variables.
+2. Substitutes `__PROJECT_ROOT__` in `.container` files and copies all Quadlet units to `~/.config/containers/systemd/`.
+3. Copies auxiliary systemd units (backup and integration timers) to `~/.config/systemd/user/`.
+4. Reloads the user systemd daemon.
+5. Enables all stack services so they survive reboots.
+6. Starts `poi-db`, waits for MariaDB readiness, and applies all pending migrations.
+7. Starts `poi-api`, `poi-web`, `poi-proxy`, and `poi-phpmyadmin`.
+8. Enables and starts `poi-backup.timer` (02:15 nightly) and `poi-integration.timer` (02:45 nightly).
 
 [Go to TOC](#table-of-contents)
 
 ## Verify Installation
-Run:
 
 ```bash
 ./scripts/status.sh
 ./scripts/health.sh
 ```
 
-Expected local endpoints:
-- `http://localhost:9010/health`
-- `http://localhost:9010/ready`
-- `http://localhost:9010/openapi.json`
-- `http://localhost:9010/docs`
+Expected healthy endpoints:
+
+| URL | Description |
+|---|---|
+| `http://localhost:9010/health` | API health probe |
+| `http://localhost:9010/ready` | API readiness probe |
+| `http://localhost:9010/openapi.json` | OpenAPI spec |
+| `http://localhost:9010/docs` | Swagger UI |
+| `http://localhost:9010/phpmyadmin/` | phpMyAdmin login |
+| `http://localhost:9010/` | Web UI |
 
 [Go to TOC](#table-of-contents)
 
 ## First Login and Smoke Test
-1. Request access token:
+
+Request an access token:
 
 ```bash
 curl -X POST http://localhost:9010/auth/login \
   -H "content-type: application/json" \
-  -d '{"username":"admin","password":"change_me_admin_password"}'
+  -d '{"username":"admin","password":"<your ADMIN_PASSWORD>"}'
 ```
 
-2. Run full integration checks:
+Run the full integration suite:
 
 ```bash
 ./scripts/test-integration.sh
@@ -105,10 +158,29 @@ curl -X POST http://localhost:9010/auth/login \
 
 [Go to TOC](#table-of-contents)
 
+## phpMyAdmin Access
+
+phpMyAdmin is available at `http://localhost:9010/phpmyadmin/`.
+
+- Log in with the `DB_USER` and `DB_PASSWORD` values from `.runtime/poi.env`.
+- phpMyAdmin starts automatically as part of the stack.
+- It runs inside the poi pod and communicates with MariaDB over `127.0.0.1:3306`.
+
+[Go to TOC](#table-of-contents)
+
 ## Optional Docs Authentication
-- Enable docs protection by setting `DOCS_AUTH_ENABLED=true` in `.runtime/poi.env`.
-- Keep `DOCS_AUTH_USER` and `DOCS_AUTH_PASS` populated.
-- Restart services after changing auth flags:
+
+Enable HTTP basic auth on `/docs` and `/openapi.json`:
+
+1. Set in `.runtime/poi.env`:
+
+```
+DOCS_AUTH_ENABLED=true
+DOCS_AUTH_USER=<username>
+DOCS_AUTH_PASS=<password>
+```
+
+2. Restart services:
 
 ```bash
 ./scripts/restart.sh

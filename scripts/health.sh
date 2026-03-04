@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+# health.sh — HTTP smoke-test against the live stack endpoints.
+#
+# Why it exists:
+#   After any start, restart, or deploy operation the operator needs fast
+#   confirmation that the proxy, API, and docs are all reachable and returning
+#   expected status codes.  This script checks the four canonical endpoints and
+#   exits non-zero on the first failure, making it safe to use in CI pipelines
+#   or as a post-deploy gate.
+#
+# Usage: ./scripts/health.sh
+#   Override the base URL: BASE_URL=http://myhost:9010 ./scripts/health.sh
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:9010}"

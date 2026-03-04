@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+# install.sh — First-time setup: copy Quadlet/systemd units and start the full stack.
+#
+# Why it exists:
+#   Podman Quadlet units must live in ~/.config/containers/systemd/ and the
+#   __PROJECT_ROOT__ placeholder must be substituted with the real path before
+#   systemd can use them.  This script handles that substitution, reloads the
+#   daemon, runs DB migrations, and enables all timers so the stack is fully
+#   operational after a single command.
+#
+# Usage: ./scripts/install.sh
+#   Run once on a fresh machine or after moving the project to a new path.
+#   Safe to re-run; it will overwrite unit files and re-apply any pending
+#   migrations without destroying data.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

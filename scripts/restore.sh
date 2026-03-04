@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# restore.sh — Restore a SQL dump into the running poi-db container.
+#
+# Why it exists:
+#   When a backup needs to be applied (disaster recovery, staging refresh, or
+#   undoing a bad migration) the restore must happen while the API and web
+#   containers are stopped to avoid partial reads during the import.  This
+#   script stops the application tier, streams the dump into MariaDB, and then
+#   brings services back up — all as a single atomic operation.
+#
+# Usage: ./scripts/restore.sh /path/to/backup.sql
+#   DESTRUCTIVE: overwrites current database content.
+#   Always take a fresh backup before restoring: ./scripts/backup.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

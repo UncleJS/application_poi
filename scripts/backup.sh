@@ -1,4 +1,18 @@
 #!/usr/bin/env bash
+# backup.sh — Create a timestamped MariaDB SQL dump inside the poi-db container.
+#
+# Why it exists:
+#   The project follows an archive-only data lifecycle (no hard deletes), but a
+#   database dump provides a point-in-time recovery option in case of volume
+#   corruption or accidental schema changes.  This script writes dumps to
+#   .runtime/backups/ with UTC timestamps, and trims old files to the retention
+#   limit (BACKUP_RETAIN_COUNT, default 30) so disk space does not grow without
+#   bound.
+#
+# Usage: ./scripts/backup.sh
+#   Runs automatically on a nightly schedule via poi-backup.timer.
+#   Run manually before any destructive operation (schema change, restore).
+#   Restore a dump with: ./scripts/restore.sh .runtime/backups/<file>.sql
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# Start the phpMyAdmin service (managed by Quadlet/systemd as part of the poi pod).
-# Access at: http://localhost:9010/phpmyadmin/
+# phpmyadmin.sh — Convenience wrapper to start the phpMyAdmin service.
 #
-# phpMyAdmin is now a proper Quadlet-managed container in the poi pod.
-# This script is a convenience wrapper around systemctl.
+# Why it exists:
+#   phpMyAdmin is managed as a Quadlet container unit (poi-phpmyadmin.service)
+#   that runs inside the poi pod alongside the rest of the stack.  This script
+#   provides a memorable entry point for operators who want to start or check
+#   phpMyAdmin without remembering the full systemctl syntax.
+#
+# Usage: ./scripts/phpmyadmin.sh
+#   phpMyAdmin is accessible at http://localhost:9010/phpmyadmin/
+#   Log in with the MariaDB credentials from .runtime/poi.env.
+#   Under normal operation poi-phpmyadmin starts automatically with the stack
+#   via start.sh — this script is only needed if the service was stopped manually.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

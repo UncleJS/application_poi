@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# migrate.sh — Apply pending SQL migrations to the running poi-db container.
+#
+# Why it exists:
+#   Schema changes are tracked in db/migrations/ as sequential *.sql files.
+#   This script runs inside the poi-db container via podman exec, checks a
+#   schema_migrations tracking table, and only applies files that have not
+#   been recorded there.  This makes it idempotent and safe to run on every
+#   start — already-applied files are skipped with a log message.
+#
+# Usage: ./scripts/migrate.sh
+#   Requires poi-db to be running.  Called automatically by start.sh and
+#   install.sh.  Run manually after dropping in a new migration file.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
