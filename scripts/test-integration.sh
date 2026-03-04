@@ -57,17 +57,23 @@ curl -sS -X POST "${BASE_URL}/auth/refresh" \
 NEW_ACCESS="$(json_get "${tmp_dir}/refresh.json" accessToken)"
 [[ -n "${NEW_ACCESS}" ]] || { echo "[FAIL] refresh failed"; exit 1; }
 
+echo "[TEST] fetch categories"
+curl -sS "${BASE_URL}/api/categories" > "${tmp_dir}/categories.json"
+CATEGORY_ID="$(python -c "import json,sys;d=json.load(open(sys.argv[1]));print(d[0]['id'] if d else '')" "${tmp_dir}/categories.json")"
+[[ -n "${CATEGORY_ID}" ]] || { echo "[FAIL] no categories found — seed data may be missing"; exit 1; }
+
 echo "[TEST] create poi"
 curl -sS -X POST "${BASE_URL}/api/pois" \
   -H "content-type: application/json" \
   -H "authorization: Bearer ${NEW_ACCESS}" \
-  -d '{"name":"Integration POI","description":"Created by test","category":"qa","lat":-33.9249,"lng":18.4241}' > "${tmp_dir}/poi_create.json"
+  -d "{\"name\":\"Integration POI\",\"description\":\"Created by test\",\"categoryId\":\"${CATEGORY_ID}\",\"lat\":-33.9249,\"lng\":18.4241}" > "${tmp_dir}/poi_create.json"
 
 POI_ID="$(json_get "${tmp_dir}/poi_create.json" id)"
-[[ -n "${POI_ID}" ]] || { echo "[FAIL] poi creation failed"; exit 1; }
+[[ -n "${POI_ID}" ]] || { echo "[FAIL] poi creation failed — response: $(cat "${tmp_dir}/poi_create.json")"; exit 1; }
 
 echo "[TEST] list poi search"
-curl -sS "${BASE_URL}/api/pois?q=Integration%20POI" > "${tmp_dir}/pois_search.json"
+curl -sS "${BASE_URL}/api/pois?q=Integration%20POI&scope=mine" \
+  -H "authorization: Bearer ${NEW_ACCESS}" > "${tmp_dir}/pois_search.json"
 python -c "import json,sys;d=json.load(open(sys.argv[1]));assert any(x.get('id')==sys.argv[2] for x in d)" "${tmp_dir}/pois_search.json" "${POI_ID}"
 
 echo "[TEST] upload photo"
@@ -88,7 +94,8 @@ curl -sS -X DELETE "${BASE_URL}/api/pois/${POI_ID}" -H "authorization: Bearer ${
 curl -sS -X POST "${BASE_URL}/api/pois/${POI_ID}/restore" -H "authorization: Bearer ${NEW_ACCESS}" > "${tmp_dir}/poi_restore.json"
 
 echo "[TEST] radius query"
-curl -sS "${BASE_URL}/api/pois?lat=-33.9249&lng=18.4241&radiusKm=5" > "${tmp_dir}/radius.json"
+curl -sS "${BASE_URL}/api/pois?lat=-33.9249&lng=18.4241&radiusKm=5&scope=mine" \
+  -H "authorization: Bearer ${NEW_ACCESS}" > "${tmp_dir}/radius.json"
 python -c "import json,sys;d=json.load(open(sys.argv[1]));assert isinstance(d,list) and len(d)>=1" "${tmp_dir}/radius.json"
 
 echo "[PASS] integration tests completed"
