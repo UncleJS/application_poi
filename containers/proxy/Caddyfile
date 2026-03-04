@@ -12,5 +12,10 @@
   @api path /health /ready /openapi.json /docs /docs/* /auth/* /api/*
   reverse_proxy @api poi-api:3001
 
+  handle_path /phpmyadmin* {
+    header X-Frame-Options ""
+    reverse_proxy poi-phpmyadmin:80
+  }
+
   reverse_proxy poi-web:3000
 }
