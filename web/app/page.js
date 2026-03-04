@@ -97,6 +97,7 @@ export default function HomePage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [categories, setCategories] = useState([])
   const [selectedPoiCategoryId, setSelectedPoiCategoryId] = useState('')
+  const [selectedPoiName, setSelectedPoiName] = useState('')
   const [selectedPoiDescription, setSelectedPoiDescription] = useState('')
   const [selectedPoiIsPublic, setSelectedPoiIsPublic] = useState(false)
   const [scopeFilter, setScopeFilter] = useState('all')
@@ -420,6 +421,7 @@ export default function HomePage() {
         method: 'PATCH',
         headers: { 'content-type': 'application/json', ...authHeader },
         body: JSON.stringify({
+          name: selectedPoiName,
           description: selectedPoiDescription,
           isPublic: selectedPoiIsPublic
         })
@@ -551,9 +553,10 @@ export default function HomePage() {
   }, [selectedPoi?.id, selectedPoi?.category_id])
 
   useEffect(() => {
+    setSelectedPoiName(selectedPoi?.name || '')
     setSelectedPoiDescription(selectedPoi?.description || '')
     setSelectedPoiIsPublic(Boolean(selectedPoi?.is_public))
-  }, [selectedPoi?.id, selectedPoi?.description, selectedPoi?.is_public])
+  }, [selectedPoi?.id, selectedPoi?.name, selectedPoi?.description, selectedPoi?.is_public])
 
   useEffect(() => {
     initMap(pois)
@@ -740,6 +743,12 @@ export default function HomePage() {
                   {auth.accessToken && selectedPoi.canEdit ? (
                     <div className="grid gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-2">
                       <div className="text-xs font-semibold text-zinc-300">Edit details</div>
+                      <input
+                        value={selectedPoiName}
+                        onChange={(e) => setSelectedPoiName(e.target.value)}
+                        className={inputClass}
+                        placeholder="Name"
+                      />
                       <textarea
                         value={selectedPoiDescription}
                         onChange={(e) => setSelectedPoiDescription(e.target.value)}
@@ -758,7 +767,13 @@ export default function HomePage() {
                         type="button"
                         className={buttonClass}
                         onClick={updateSelectedPoiDetails}
-                        disabled={selectedPoiDescription === (selectedPoi.description || '') && selectedPoiIsPublic === Boolean(selectedPoi.is_public)}
+                        disabled={
+                          !selectedPoiName.trim() || (
+                            selectedPoiName === (selectedPoi.name || '') &&
+                            selectedPoiDescription === (selectedPoi.description || '') &&
+                            selectedPoiIsPublic === Boolean(selectedPoi.is_public)
+                          )
+                        }
                       >
                         Save Details
                       </button>
