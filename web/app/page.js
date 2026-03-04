@@ -604,7 +604,6 @@ export default function HomePage() {
 
       <section className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         <h1 className="mb-2 text-2xl font-semibold tracking-tight">OSM POI Platform</h1>
-        <p className="mb-4 text-sm text-zinc-400">Per-user POIs with share controls, admin user management, and archive lifecycle.</p>
 
         <div className="mb-3 grid gap-2">
           {error ? <div className="rounded-lg border border-red-800 bg-red-950 p-2.5 text-sm text-red-300">{error}</div> : null}
@@ -614,35 +613,6 @@ export default function HomePage() {
 
         <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
           <div>
-            <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name/description" className={`${inputClass} sm:flex-1`} />
-              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputClass} sm:w-44`}>
-                <option value="">All categories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </select>
-              {auth.accessToken ? (
-                <select value={scopeFilter} onChange={(e) => setScopeFilter(e.target.value)} className={`${inputClass} sm:w-32`}>
-                  <option value="all">All</option>
-                  <option value="mine">Mine</option>
-                  <option value="shared">Shared</option>
-                </select>
-              ) : null}
-              <select value={mapTheme} onChange={(event) => setMapTheme(event.target.value)} className={`${inputClass} sm:w-44`}>
-                {Object.entries(mapThemes).map(([value, theme]) => (
-                  <option key={value} value={value}>{theme.label}</option>
-                ))}
-              </select>
-              <button onClick={fetchPois} disabled={loading} className={buttonClass}>{loading ? 'Loading...' : 'Search'}</button>
-              {auth.accessToken ? (
-                <label className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300">
-                  <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
-                  Include archived
-                </label>
-              ) : null}
-            </div>
-
             <div className="overflow-hidden rounded-xl border border-zinc-800">
               <div id="map" style={{ height: mapHeight }} className="w-full bg-zinc-900" />
               <button type="button" onMouseDown={handleDragStart} className="block h-3 w-full cursor-ns-resize bg-zinc-800 text-[10px] text-zinc-400 transition hover:bg-zinc-700">
@@ -687,6 +657,35 @@ export default function HomePage() {
               )}
             </div>
 
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name/description" className={`${inputClass} sm:flex-1`} />
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputClass} sm:w-44`}>
+                <option value="">All categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+              {auth.accessToken ? (
+                <select value={scopeFilter} onChange={(e) => setScopeFilter(e.target.value)} className={`${inputClass} sm:w-32`}>
+                  <option value="all">All</option>
+                  <option value="mine">Mine</option>
+                  <option value="shared">Shared</option>
+                </select>
+              ) : null}
+              <select value={mapTheme} onChange={(event) => setMapTheme(event.target.value)} className={`${inputClass} sm:w-44`}>
+                {Object.entries(mapThemes).map(([value, theme]) => (
+                  <option key={value} value={value}>{theme.label}</option>
+                ))}
+              </select>
+              <button onClick={fetchPois} disabled={loading} className={buttonClass}>{loading ? 'Loading...' : 'Search'}</button>
+              {auth.accessToken ? (
+                <label className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300">
+                  <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
+                  Include archived
+                </label>
+              ) : null}
+            </div>
+
             <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3">
               <h2 className="mb-2 text-lg font-medium">POI List</h2>
               <div className="grid max-h-64 gap-2 overflow-auto">
@@ -712,7 +711,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid content-start gap-3 self-start">
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
               <h2 className="mb-2 text-lg font-medium">Login</h2>
               <div className="grid gap-2">
