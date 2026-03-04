@@ -22,6 +22,8 @@ require_cmd podman
 ABSOLUTE_URI="${1:-http://localhost:9010/phpmyadmin/}"
 CONTAINER_NAME="poi-phpmyadmin"
 IMAGE="docker.io/phpmyadmin:latest"
+APACHE_CONF="${PROJECT_ROOT}/containers/phpmyadmin/phpmyadmin.conf"
+HEADER_PHP="${PROJECT_ROOT}/containers/phpmyadmin/Header.php"
 
 log "Pulling ${IMAGE}"
 podman pull "${IMAGE}"
@@ -33,6 +35,8 @@ podman run -d \
   --network poi \
   -e PMA_HOST=poi-db \
   -e PMA_ABSOLUTE_URI="${ABSOLUTE_URI}" \
+  -v "${APACHE_CONF}:/etc/apache2/conf-enabled/phpmyadmin.conf:ro,Z" \
+  -v "${HEADER_PHP}:/var/www/html/libraries/classes/Header.php:ro,Z" \
   "${IMAGE}"
 
 log "${CONTAINER_NAME} started"
