@@ -97,6 +97,8 @@ export default function HomePage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [categories, setCategories] = useState([])
   const [selectedPoiCategoryId, setSelectedPoiCategoryId] = useState('')
+  const [selectedPoiDescription, setSelectedPoiDescription] = useState('')
+  const [selectedPoiIsPublic, setSelectedPoiIsPublic] = useState(false)
   const [scopeFilter, setScopeFilter] = useState('all')
   const [shareUsername, setShareUsername] = useState('')
 
@@ -332,6 +334,19 @@ export default function HomePage() {
     await refreshAccessToken({ announceSuccess: true })
   }
 
+  const logout = () => {
+    setError('')
+    setSuccess('Logged out')
+    setSelectedPoi(null)
+    setAuth((prev) => ({
+      ...prev,
+      password: '',
+      accessToken: '',
+      refreshToken: '',
+      role: ''
+    }))
+  }
+
   const createPoi = async (event) => {
     event.preventDefault()
     setError('')
@@ -391,6 +406,25 @@ export default function HomePage() {
         body: JSON.stringify({ categoryId: selectedPoiCategoryId })
       })
       setSuccess('POI category updated')
+      await fetchPois()
+      await fetchPoiDetail(selectedPoi.id)
+    } catch (err) {
+      setError(String(err.message || err))
+    }
+  }
+
+  const updateSelectedPoiDetails = async () => {
+    if (!selectedPoi?.id) return
+    try {
+      await request(`/api/pois/${selectedPoi.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', ...authHeader },
+        body: JSON.stringify({
+          description: selectedPoiDescription,
+          isPublic: selectedPoiIsPublic
+        })
+      })
+      setSuccess('POI details updated')
       await fetchPois()
       await fetchPoiDetail(selectedPoi.id)
     } catch (err) {
@@ -517,6 +551,11 @@ export default function HomePage() {
   }, [selectedPoi?.id, selectedPoi?.category_id])
 
   useEffect(() => {
+    setSelectedPoiDescription(selectedPoi?.description || '')
+    setSelectedPoiIsPublic(Boolean(selectedPoi?.is_public))
+  }, [selectedPoi?.id, selectedPoi?.description, selectedPoi?.is_public])
+
+  useEffect(() => {
     initMap(pois)
   }, [pois, mapTheme, pendingLatLng])
 
@@ -613,6 +652,42 @@ export default function HomePage() {
             <p className="mt-2 text-xs text-zinc-400">Total: {stats.total} | Archived in result set: {stats.archived}</p>
 
             <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3">
+              <h2 className="mb-2 text-lg font-medium">POI Images</h2>
+              {!selectedPoi ? (
+                <p className="m-0 text-sm text-zinc-400">Select a POI to view images.</p>
+              ) : (
+                <div className="grid gap-2">
+                  {auth.accessToken ? <label className="grid gap-2 text-sm text-zinc-300">
+                    Upload photo (max {uploadLimitMb}MB)
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadPhoto} className={inputClass} disabled={!selectedPoi.canEdit} />
+                  </label> : null}
+
+                  {auth.accessToken ? <div className="grid max-h-48 gap-2 overflow-auto">
+                    {(selectedPoi.photos || []).map((photo) => (
+                      <div key={photo.id} className="rounded-lg border border-zinc-800 p-2 text-sm">
+                        <a href={`/api/photos/${photo.id}`} target="_blank" rel="noreferrer" className="text-teal-400 hover:text-teal-300">{photo.filename}</a>
+                        <div className="mt-1 text-xs text-zinc-400">{photo.mime_type} | {photo.size_bytes} bytes</div>
+                        <div className="mt-1 text-xs text-zinc-400">Status: {photo.archived_at ? 'Archived' : 'Active'}</div>
+                        {selectedPoi.canEdit ? (
+                          <div className="mt-2">
+                            {!photo.archived_at ? (
+                              <button onClick={() => archivePhoto(photo.id)} className={buttonClass}>Archive</button>
+                            ) : (
+                              <button onClick={() => restorePhoto(photo.id)} className={buttonClass}>Restore</button>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                    {(selectedPoi.photos || []).length === 0 ? <p className="text-sm text-zinc-500">No photos yet.</p> : null}
+                  </div> : (
+                    <p className="text-sm text-zinc-500">Login to view and manage images.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3">
               <h2 className="mb-2 text-lg font-medium">POI List</h2>
               <div className="grid max-h-64 gap-2 overflow-auto">
                 {pois.map((poi) => (
@@ -646,6 +721,7 @@ export default function HomePage() {
                 <div className="flex gap-2">
                   <button onClick={login} className={`${buttonClass} flex-1`}>Login</button>
                   <button onClick={refresh} disabled={!auth.refreshToken} className={`${buttonClass} flex-1`}>Refresh</button>
+                  <button onClick={logout} disabled={!auth.accessToken && !auth.refreshToken} className={`${buttonClass} flex-1`}>Logout</button>
                 </div>
                 {auth.role ? <p className="text-xs text-zinc-400">Role: {auth.role}</p> : null}
               </div>
@@ -701,6 +777,33 @@ export default function HomePage() {
                   <span className="text-zinc-300">Category: {selectedPoi.category}</span>
                   {auth.accessToken && selectedPoi.canEdit ? (
                     <div className="grid gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-2">
+                      <div className="text-xs font-semibold text-zinc-300">Edit details</div>
+                      <textarea
+                        value={selectedPoiDescription}
+                        onChange={(e) => setSelectedPoiDescription(e.target.value)}
+                        className={inputClass}
+                        placeholder="Description"
+                      />
+                      <label className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300">
+                        <input
+                          type="checkbox"
+                          checked={selectedPoiIsPublic}
+                          onChange={(e) => setSelectedPoiIsPublic(e.target.checked)}
+                        />
+                        Public POI
+                      </label>
+                      <button
+                        type="button"
+                        className={buttonClass}
+                        onClick={updateSelectedPoiDetails}
+                        disabled={selectedPoiDescription === (selectedPoi.description || '') && selectedPoiIsPublic === Boolean(selectedPoi.is_public)}
+                      >
+                        Save Details
+                      </button>
+                    </div>
+                  ) : null}
+                  {auth.accessToken && selectedPoi.canEdit ? (
+                    <div className="grid gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-2">
                       <div className="text-xs font-semibold text-zinc-300">Change category</div>
                       <div className="flex gap-2">
                         <select value={selectedPoiCategoryId} onChange={(e) => setSelectedPoiCategoryId(e.target.value)} className={inputClass}>
@@ -747,38 +850,10 @@ export default function HomePage() {
                     </div>
                   ) : null}
 
-                  {auth.accessToken ? <label className="grid gap-2 text-sm text-zinc-300">
-                    Upload photo (max {uploadLimitMb}MB)
-                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadPhoto} className={inputClass} disabled={!selectedPoi.canEdit} />
-                  </label> : null}
-
-                  {auth.accessToken ? <div className="grid max-h-48 gap-2 overflow-auto">
-                    {(selectedPoi.photos || []).map((photo) => (
-                      <div key={photo.id} className="rounded-lg border border-zinc-800 p-2">
-                        <a href={`/api/photos/${photo.id}`} target="_blank" rel="noreferrer" className="text-teal-400 hover:text-teal-300">{photo.filename}</a>
-                        <div className="mt-1 text-xs text-zinc-400">{photo.mime_type} | {photo.size_bytes} bytes</div>
-                        <div className="mt-1 text-xs text-zinc-400">Status: {photo.archived_at ? 'Archived' : 'Active'}</div>
-                        {selectedPoi.canEdit ? (
-                          <div className="mt-2">
-                            {!photo.archived_at ? (
-                              <button onClick={() => archivePhoto(photo.id)} className={buttonClass}>Archive</button>
-                            ) : (
-                              <button onClick={() => restorePhoto(photo.id)} className={buttonClass}>Restore</button>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div> : null}
                 </div>
               )}
             </div>
 
-            {auth.role === 'admin' ? (
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-300">
-                User and category administration moved to the top menu.
-              </div>
-            ) : null}
           </div>
         </div>
       </section>

@@ -69,6 +69,19 @@ export default function UsersPage() {
     }
   }
 
+  const logout = () => {
+    setError('')
+    setSuccess('Logged out')
+    setUsers([])
+    setAuth((prev) => ({
+      ...prev,
+      password: '',
+      accessToken: '',
+      refreshToken: '',
+      role: ''
+    }))
+  }
+
   const fetchUsers = async () => {
     if (auth.role !== 'admin' || !auth.accessToken) {
       setUsers([])
@@ -185,7 +198,10 @@ export default function UsersPage() {
           <div className="grid gap-2">
             <input value={auth.username} onChange={(e) => setAuth((p) => ({ ...p, username: e.target.value }))} placeholder="Username" className={inputClass} />
             <input type="password" value={auth.password} onChange={(e) => setAuth((p) => ({ ...p, password: e.target.value }))} placeholder="Password" className={inputClass} />
-            <button onClick={login} className={buttonClass}>Login</button>
+            <div className="flex gap-2">
+              <button onClick={login} className={`${buttonClass} flex-1`}>Login</button>
+              <button onClick={logout} disabled={!auth.accessToken && !auth.refreshToken} className={`${buttonClass} flex-1`}>Logout</button>
+            </div>
             {auth.role ? <p className="text-xs text-zinc-400">Role: {auth.role}</p> : null}
           </div>
         </div>
