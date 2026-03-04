@@ -14,7 +14,7 @@ wait_for_db
 
 "${SCRIPT_DIR}/migrate.sh"
 
-for svc in "poi-api.service" "poi-web.service" "poi-proxy.service"; do
+for svc in "poi-api.service" "poi-web.service" "poi-proxy.service" "poi-phpmyadmin.service"; do
   log "Starting ${svc}"
   systemctl --user start "${svc}"
 done

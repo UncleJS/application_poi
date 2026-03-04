@@ -17,4 +17,4 @@ COPY --from=build /app/.next/static /app/.next/static
 COPY --from=build /app/public /app/public
 
 EXPOSE 3000
-CMD ["bun", "server.js"]
+CMD ["sh", "-c", "HOSTNAME=0.0.0.0 bun server.js"]

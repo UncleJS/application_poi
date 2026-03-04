@@ -17,6 +17,7 @@ STACK_SERVICES=(
   "poi-api.service"
   "poi-web.service"
   "poi-proxy.service"
+  "poi-phpmyadmin.service"
 )
 
 STACK_AUX_UNITS=(

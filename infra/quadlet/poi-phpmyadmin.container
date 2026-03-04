@@ -1,0 +1,19 @@
+[Unit]
+Description=POI phpMyAdmin
+PartOf=poi-pod.service
+After=poi-pod.service poi-db.service
+
+[Container]
+Image=docker.io/phpmyadmin:latest
+ContainerName=poi-phpmyadmin
+Pod=poi.pod
+EnvironmentFile=__PROJECT_ROOT__/.runtime/poi.env
+Volume=__PROJECT_ROOT__/containers/phpmyadmin/phpmyadmin.conf:/etc/apache2/conf-enabled/phpmyadmin.conf:ro,Z
+Volume=__PROJECT_ROOT__/containers/phpmyadmin/Header.php:/var/www/html/libraries/classes/Header.php:ro,Z
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=poi-pod.service

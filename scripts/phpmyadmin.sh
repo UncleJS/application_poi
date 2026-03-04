@@ -1,44 +1,18 @@
 #!/usr/bin/env bash
-# Start a phpMyAdmin container joined to the poi network.
-# phpMyAdmin uses login-form authentication — no passwordless/config login.
+# Start the phpMyAdmin service (managed by Quadlet/systemd as part of the poi pod).
 # Access at: http://localhost:9010/phpmyadmin/
 #
-# Usage:
-#   ./scripts/phpmyadmin.sh [absolute-uri]
-#
-# Optional argument:
-#   absolute-uri   Full base URL where phpMyAdmin is served, including trailing slash.
-#                  Default: http://localhost:9010/phpmyadmin/
-#                  Override if accessing the app from a non-localhost hostname, e.g.:
-#                    ./scripts/phpmyadmin.sh http://192.168.1.10:9010/phpmyadmin/
+# phpMyAdmin is now a proper Quadlet-managed container in the poi pod.
+# This script is a convenience wrapper around systemctl.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/common.sh"
 
-require_cmd podman
+require_cmd systemctl
+require_user_systemd
 
-ABSOLUTE_URI="${1:-http://localhost:9010/phpmyadmin/}"
-CONTAINER_NAME="poi-phpmyadmin"
-IMAGE="docker.io/phpmyadmin:latest"
-APACHE_CONF="${PROJECT_ROOT}/containers/phpmyadmin/phpmyadmin.conf"
-HEADER_PHP="${PROJECT_ROOT}/containers/phpmyadmin/Header.php"
-
-log "Pulling ${IMAGE}"
-podman pull "${IMAGE}"
-
-log "Starting ${CONTAINER_NAME}"
-podman run -d \
-  --name "${CONTAINER_NAME}" \
-  --replace \
-  --network poi \
-  -e PMA_HOST=poi-db \
-  -e PMA_ABSOLUTE_URI="${ABSOLUTE_URI}" \
-  -v "${APACHE_CONF}:/etc/apache2/conf-enabled/phpmyadmin.conf:ro,Z" \
-  -v "${HEADER_PHP}:/var/www/html/libraries/classes/Header.php:ro,Z" \
-  "${IMAGE}"
-
-log "${CONTAINER_NAME} started"
-log "Access phpMyAdmin at ${ABSOLUTE_URI}"
-log "Log in with a valid MariaDB username and password (login-form auth)."
+log "Starting poi-phpmyadmin.service"
+systemctl --user start "poi-phpmyadmin.service"
+log "poi-phpmyadmin started — access at http://localhost:9010/phpmyadmin/"

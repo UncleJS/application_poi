@@ -1,18 +1,18 @@
 [Unit]
 Description=POI API service
-After=poi-db.service
+BindsTo=poi-pod.service
+After=poi-pod.service poi-db.service
 Requires=poi-db.service
 
 [Container]
 ContainerName=poi-api
 Image=localhost/poi-api:latest
-Network=poi.network
+Pod=poi.pod
 EnvironmentFile=__PROJECT_ROOT__/.runtime/poi.env
-PublishPort=127.0.0.1:3001:3001
 
 [Service]
 Restart=always
 TimeoutStartSec=120
 
 [Install]
-WantedBy=default.target
+WantedBy=poi-pod.service

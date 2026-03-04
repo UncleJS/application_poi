@@ -1,0 +1,10 @@
+[Unit]
+Description=POI pod
+After=network-online.target
+
+[Pod]
+PodName=poi
+PublishPort=127.0.0.1:9010:9010
+
+[Install]
+WantedBy=default.target

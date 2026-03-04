@@ -1,11 +1,12 @@
 [Unit]
 Description=POI MariaDB service
-After=network-online.target
+BindsTo=poi-pod.service
+After=poi-pod.service
 
 [Container]
 ContainerName=poi-db
 Image=docker.io/library/mariadb:11
-Network=poi.network
+Pod=poi.pod
 Volume=poi-db-data:/var/lib/mysql:Z
 EnvironmentFile=__PROJECT_ROOT__/.runtime/poi.env
 
@@ -14,4 +15,4 @@ Restart=always
 TimeoutStartSec=120
 
 [Install]
-WantedBy=default.target
+WantedBy=poi-pod.service

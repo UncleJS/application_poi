@@ -21,7 +21,7 @@ log "Installing Quadlet units into ${USER_QUADLET_DIR}"
 for file in "${QUADLET_SRC_DIR}"/*.container; do
   python -c "from pathlib import Path; import sys; src=Path(sys.argv[1]).read_text(); Path(sys.argv[2]).write_text(src.replace('__PROJECT_ROOT__', sys.argv[3]))" "${file}" "${USER_QUADLET_DIR}/$(basename "${file}")" "${PROJECT_ROOT}"
 done
-cp "${QUADLET_SRC_DIR}"/*.network "${USER_QUADLET_DIR}/"
+cp "${QUADLET_SRC_DIR}"/*.pod "${USER_QUADLET_DIR}/"
 cp "${QUADLET_SRC_DIR}"/*.volume "${USER_QUADLET_DIR}/"
 for file in "${SYSTEMD_SRC_DIR}"/*.service; do
   python -c "from pathlib import Path; import sys; src=Path(sys.argv[1]).read_text(); Path(sys.argv[2]).write_text(src.replace('__PROJECT_ROOT__', sys.argv[3]))" "${file}" "${USER_SYSTEMD_DIR}/$(basename "${file}")" "${PROJECT_ROOT}"
@@ -39,7 +39,7 @@ done
 systemctl --user start "poi-db.service"
 wait_for_db
 "${SCRIPT_DIR}/migrate.sh"
-systemctl --user start "poi-api.service" "poi-web.service" "poi-proxy.service"
+systemctl --user start "poi-api.service" "poi-web.service" "poi-proxy.service" "poi-phpmyadmin.service"
 
 log "Enabling backup timer"
 for unit in "${STACK_AUX_UNITS[@]}"; do
