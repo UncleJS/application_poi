@@ -621,42 +621,6 @@ export default function HomePage() {
             </div>
             <p className="mt-2 text-xs text-zinc-400">Total: {stats.total} | Archived in result set: {stats.archived}</p>
 
-            <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3">
-              <h2 className="mb-2 text-lg font-medium">POI Images</h2>
-              {!selectedPoi ? (
-                <p className="m-0 text-sm text-zinc-400">Select a POI to view images.</p>
-              ) : (
-                <div className="grid gap-2">
-                  {auth.accessToken ? <label className="grid gap-2 text-sm text-zinc-300">
-                    Upload photo (max {uploadLimitMb}MB)
-                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadPhoto} className={inputClass} disabled={!selectedPoi.canEdit} />
-                  </label> : null}
-
-                  {auth.accessToken ? <div className="grid max-h-48 gap-2 overflow-auto">
-                    {(selectedPoi.photos || []).map((photo) => (
-                      <div key={photo.id} className="rounded-lg border border-zinc-800 p-2 text-sm">
-                        <a href={`/api/photos/${photo.id}`} target="_blank" rel="noreferrer" className="text-teal-400 hover:text-teal-300">{photo.filename}</a>
-                        <div className="mt-1 text-xs text-zinc-400">{photo.mime_type} | {photo.size_bytes} bytes</div>
-                        <div className="mt-1 text-xs text-zinc-400">Status: {photo.archived_at ? 'Archived' : 'Active'}</div>
-                        {selectedPoi.canEdit ? (
-                          <div className="mt-2">
-                            {!photo.archived_at ? (
-                              <button onClick={() => archivePhoto(photo.id)} className={buttonClass}>Archive</button>
-                            ) : (
-                              <button onClick={() => restorePhoto(photo.id)} className={buttonClass}>Restore</button>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                    {(selectedPoi.photos || []).length === 0 ? <p className="text-sm text-zinc-500">No photos yet.</p> : null}
-                  </div> : (
-                    <p className="text-sm text-zinc-500">Login to view and manage images.</p>
-                  )}
-                </div>
-              )}
-            </div>
-
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name/description" className={`${inputClass} sm:flex-1`} />
               <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputClass} sm:w-44`}>
@@ -722,7 +686,6 @@ export default function HomePage() {
                   <button onClick={refresh} disabled={!auth.refreshToken} className={`${buttonClass} flex-1`}>Refresh</button>
                   <button onClick={logout} disabled={!auth.accessToken && !auth.refreshToken} className={`${buttonClass} flex-1`}>Logout</button>
                 </div>
-                {auth.role ? <p className="text-xs text-zinc-400">Role: {auth.role}</p> : null}
               </div>
             </div>
 
@@ -849,6 +812,42 @@ export default function HomePage() {
                     </div>
                   ) : null}
 
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
+              <h2 className="mb-2 text-lg font-medium">POI Images</h2>
+              {!selectedPoi ? (
+                <p className="m-0 text-sm text-zinc-400">Select a POI to view images.</p>
+              ) : (
+                <div className="grid gap-2">
+                  {auth.accessToken ? <label className="grid gap-2 text-sm text-zinc-300">
+                    Upload photo (max {uploadLimitMb}MB)
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadPhoto} className={inputClass} disabled={!selectedPoi.canEdit} />
+                  </label> : null}
+
+                  {auth.accessToken ? <div className="grid max-h-48 gap-2 overflow-auto">
+                    {(selectedPoi.photos || []).map((photo) => (
+                      <div key={photo.id} className="rounded-lg border border-zinc-800 p-2 text-sm">
+                        <a href={`/api/photos/${photo.id}`} target="_blank" rel="noreferrer" className="text-teal-400 hover:text-teal-300">{photo.filename}</a>
+                        <div className="mt-1 text-xs text-zinc-400">{photo.mime_type} | {photo.size_bytes} bytes</div>
+                        <div className="mt-1 text-xs text-zinc-400">Status: {photo.archived_at ? 'Archived' : 'Active'}</div>
+                        {selectedPoi.canEdit ? (
+                          <div className="mt-2">
+                            {!photo.archived_at ? (
+                              <button onClick={() => archivePhoto(photo.id)} className={buttonClass}>Archive</button>
+                            ) : (
+                              <button onClick={() => restorePhoto(photo.id)} className={buttonClass}>Restore</button>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                    {(selectedPoi.photos || []).length === 0 ? <p className="text-sm text-zinc-500">No photos yet.</p> : null}
+                  </div> : (
+                    <p className="text-sm text-zinc-500">Login to view and manage images.</p>
+                  )}
                 </div>
               )}
             </div>

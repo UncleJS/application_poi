@@ -196,7 +196,6 @@ export default function CategoriesPage() {
               <button onClick={login} className={`${buttonClass} flex-1`}>Login</button>
               <button onClick={logout} disabled={!auth.accessToken && !auth.refreshToken} className={`${buttonClass} flex-1`}>Logout</button>
             </div>
-            {auth.role ? <p className="text-xs text-zinc-400">Role: {auth.role}</p> : null}
           </div>
         </div>
 
