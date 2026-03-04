@@ -3,7 +3,7 @@
   "info": {
     "title": "POI API",
     "version": "2.0.0",
-    "description": "Per-user POI API with ACL sharing, admin user management, archive/restore lifecycle, and MariaDB photo storage"
+    "description": "Per-user POI API with ACL sharing, admin user/category management, archive/restore lifecycle, and MariaDB photo storage"
   },
   "servers": [
     {
@@ -117,18 +117,83 @@
         "responses": { "200": { "description": "Restored" } }
       }
     },
+    "/api/categories": {
+      "get": {
+        "summary": "List categories",
+        "parameters": [
+          { "name": "includeArchived", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": { "200": { "description": "Category list" } }
+      }
+    },
+    "/api/admin/categories": {
+      "post": {
+        "summary": "Create category (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" }, "409": { "description": "Conflict" } }
+      }
+    },
+    "/api/admin/categories/{id}": {
+      "patch": {
+        "summary": "Update category name (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" }, "403": { "description": "Forbidden" }, "409": { "description": "Conflict" } }
+      },
+      "delete": {
+        "summary": "Archive category (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Archived" }, "403": { "description": "Forbidden" }, "409": { "description": "Category in use" } }
+      }
+    },
+    "/api/admin/categories/{id}/restore": {
+      "post": {
+        "summary": "Restore category (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Restored" }, "403": { "description": "Forbidden" } }
+      }
+    },
     "/api/pois": {
       "get": {
         "summary": "List/search accessible POIs",
-        "security": [{ "bearerAuth": [] }],
         "parameters": [
-          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "categoryId", "in": "query", "schema": { "type": "string" } },
           { "name": "q", "in": "query", "schema": { "type": "string" } },
           { "name": "scope", "in": "query", "schema": { "type": "string", "enum": ["all", "mine", "shared"] } },
           { "name": "includeArchived", "in": "query", "schema": { "type": "boolean" } },
           { "name": "limit", "in": "query", "schema": { "type": "integer" } }
         ],
-        "responses": { "200": { "description": "POI list" }, "401": { "description": "Unauthorized" } }
+        "responses": { "200": { "description": "POI list" } }
       },
       "post": {
         "summary": "Create POI",
@@ -139,11 +204,12 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name", "category", "lat", "lng"],
+                "required": ["name", "categoryId", "lat", "lng"],
                 "properties": {
                   "name": { "type": "string" },
                   "description": { "type": "string" },
-                  "category": { "type": "string" },
+                  "categoryId": { "type": "string" },
+                  "isPublic": { "type": "boolean", "default": false },
                   "lat": { "type": "number" },
                   "lng": { "type": "number" }
                 }
@@ -157,7 +223,6 @@
     "/api/pois/{id}": {
       "get": {
         "summary": "Get POI details with photos and shares",
-        "security": [{ "bearerAuth": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
         "responses": { "200": { "description": "POI detail" }, "404": { "description": "Not found" } }
       },
@@ -165,6 +230,24 @@
         "summary": "Update POI",
         "security": [{ "bearerAuth": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "categoryId": { "type": "string" },
+                  "isPublic": { "type": "boolean" },
+                  "lat": { "type": "number" },
+                  "lng": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
         "responses": { "200": { "description": "Updated" }, "403": { "description": "Forbidden" } }
       },
       "delete": {

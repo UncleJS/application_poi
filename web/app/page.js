@@ -95,6 +95,8 @@ export default function HomePage() {
   const [mapTheme, setMapTheme] = useState(loadStoredTheme)
   const [mapHeight, setMapHeight] = useState(loadStoredHeight)
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [categories, setCategories] = useState([])
+  const [selectedPoiCategoryId, setSelectedPoiCategoryId] = useState('')
   const [scopeFilter, setScopeFilter] = useState('all')
   const [shareUsername, setShareUsername] = useState('')
 
@@ -102,14 +104,11 @@ export default function HomePage() {
   const [poiForm, setPoiForm] = useState({
     name: '',
     description: '',
-    category: 'general',
+    categoryId: '',
+    isPublic: false,
     lat: defaultLat,
     lng: defaultLng
   })
-
-  const [users, setUsers] = useState([])
-  const [includeArchivedUsers, setIncludeArchivedUsers] = useState(false)
-  const [userForm, setUserForm] = useState({ username: '', password: '', role: 'user' })
 
   const dragState = useRef({ dragging: false, startY: 0, startHeight: defaultMapHeight })
 
@@ -135,23 +134,24 @@ export default function HomePage() {
     return res.text()
   }
 
-  const fetchUsers = async () => {
-    if (auth.role !== 'admin' || !auth.accessToken) return
+  const fetchPoiDetail = async (poiId) => {
     try {
-      const params = new URLSearchParams()
-      if (includeArchivedUsers) params.set('includeArchived', 'true')
-      const data = await request(`/api/admin/users?${params.toString()}`, { headers: authHeader })
-      setUsers(Array.isArray(data) ? data : [])
+      const detail = await request(`/api/pois/${poiId}`, { headers: auth.accessToken ? authHeader : undefined })
+      setSelectedPoi(detail)
     } catch (err) {
       setError(String(err.message || err))
     }
   }
 
-  const fetchPoiDetail = async (poiId) => {
-    if (!auth.accessToken) return
+  const fetchCategories = async () => {
     try {
-      const detail = await request(`/api/pois/${poiId}`, { headers: authHeader })
-      setSelectedPoi(detail)
+      const data = await request('/api/categories', { headers: auth.accessToken ? authHeader : undefined })
+      const nextCategories = Array.isArray(data) ? data : []
+      setCategories(nextCategories)
+      setPoiForm((prev) => {
+        if (prev.categoryId) return prev
+        return { ...prev, categoryId: nextCategories[0]?.id || '' }
+      })
     } catch (err) {
       setError(String(err.message || err))
     }
@@ -265,20 +265,15 @@ export default function HomePage() {
   }
 
   const fetchPois = async () => {
-    if (!auth.accessToken) {
-      setPois([])
-      setSelectedPoi(null)
-      return
-    }
     setLoading(true)
     setError('')
     try {
       const params = new URLSearchParams()
       if (search.trim()) params.set('q', search.trim())
       if (includeArchived) params.set('includeArchived', 'true')
-      if (categoryFilter.trim()) params.set('category', categoryFilter.trim())
-      params.set('scope', scopeFilter)
-      const data = await request(`/api/pois?${params.toString()}`, { headers: authHeader })
+      if (categoryFilter.trim()) params.set('categoryId', categoryFilter.trim())
+      if (auth.accessToken) params.set('scope', scopeFilter)
+      const data = await request(`/api/pois?${params.toString()}`, { headers: auth.accessToken ? authHeader : undefined })
       if (typeof window !== 'undefined') {
         window.__poiHasAutoFit = false
       }
@@ -350,11 +345,13 @@ export default function HomePage() {
         },
         body: JSON.stringify({
           ...poiForm,
+          categoryId: poiForm.categoryId,
+          isPublic: poiForm.isPublic,
           lat: Number(poiForm.lat),
           lng: Number(poiForm.lng)
         })
       })
-      setPoiForm((prev) => ({ ...prev, name: '', description: '' }))
+      setPoiForm((prev) => ({ ...prev, name: '', description: '', isPublic: false }))
       setPendingLatLng(null)
       setSuccess('POI created')
       await fetchPois()
@@ -380,6 +377,22 @@ export default function HomePage() {
       setSuccess('POI restored')
       await fetchPois()
       await fetchPoiDetail(poiId)
+    } catch (err) {
+      setError(String(err.message || err))
+    }
+  }
+
+  const updateSelectedPoiCategory = async () => {
+    if (!selectedPoi?.id || !selectedPoiCategoryId) return
+    try {
+      await request(`/api/pois/${selectedPoi.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', ...authHeader },
+        body: JSON.stringify({ categoryId: selectedPoiCategoryId })
+      })
+      setSuccess('POI category updated')
+      await fetchPois()
+      await fetchPoiDetail(selectedPoi.id)
     } catch (err) {
       setError(String(err.message || err))
     }
@@ -458,42 +471,6 @@ export default function HomePage() {
     }
   }
 
-  const createUser = async (event) => {
-    event.preventDefault()
-    try {
-      await request('/api/admin/users', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', ...authHeader },
-        body: JSON.stringify(userForm)
-      })
-      setUserForm({ username: '', password: '', role: 'user' })
-      setSuccess('User created')
-      await fetchUsers()
-    } catch (err) {
-      setError(String(err.message || err))
-    }
-  }
-
-  const archiveUser = async (userId) => {
-    try {
-      await request(`/api/admin/users/${userId}`, { method: 'DELETE', headers: authHeader })
-      setSuccess('User archived')
-      await fetchUsers()
-    } catch (err) {
-      setError(String(err.message || err))
-    }
-  }
-
-  const restoreUser = async (userId) => {
-    try {
-      await request(`/api/admin/users/${userId}/restore`, { method: 'POST', headers: authHeader })
-      setSuccess('User restored')
-      await fetchUsers()
-    } catch (err) {
-      setError(String(err.message || err))
-    }
-  }
-
   const clearPendingPin = () => {
     setPendingLatLng(null)
     setPoiForm((prev) => ({ ...prev, lat: defaultLat, lng: defaultLng }))
@@ -528,12 +505,16 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    if (!auth.accessToken) {
-      setPois([])
-      return
-    }
     fetchPois()
   }, [includeArchived, categoryFilter, scopeFilter, auth.accessToken])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [auth.accessToken])
+
+  useEffect(() => {
+    setSelectedPoiCategoryId(selectedPoi?.category_id || '')
+  }, [selectedPoi?.id, selectedPoi?.category_id])
 
   useEffect(() => {
     initMap(pois)
@@ -544,12 +525,6 @@ export default function HomePage() {
       window.__poiMap.invalidateSize()
     }
   }, [mapHeight])
-
-  useEffect(() => {
-    if (auth.role === 'admin') {
-      fetchUsers()
-    }
-  }, [auth.role, includeArchivedUsers])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -595,29 +570,38 @@ export default function HomePage() {
         <div className="mb-3 grid gap-2">
           {error ? <div className="rounded-lg border border-red-800 bg-red-950 p-2.5 text-sm text-red-300">{error}</div> : null}
           {success ? <div className="rounded-lg border border-emerald-800 bg-emerald-950 p-2.5 text-sm text-emerald-300">{success}</div> : null}
-          {!auth.accessToken ? <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-sm text-zinc-300">Login is required to load and manage POIs.</div> : null}
+          {!auth.accessToken ? <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-sm text-zinc-300">Showing public POIs only. Login to create, edit, and view private items.</div> : null}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
           <div>
             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name/description" className={`${inputClass} sm:flex-1`} />
-              <input value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} placeholder="Category filter" className={`${inputClass} sm:w-40`} />
-              <select value={scopeFilter} onChange={(e) => setScopeFilter(e.target.value)} className={`${inputClass} sm:w-32`}>
-                <option value="all">All</option>
-                <option value="mine">Mine</option>
-                <option value="shared">Shared</option>
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputClass} sm:w-44`}>
+                <option value="">All categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
               </select>
+              {auth.accessToken ? (
+                <select value={scopeFilter} onChange={(e) => setScopeFilter(e.target.value)} className={`${inputClass} sm:w-32`}>
+                  <option value="all">All</option>
+                  <option value="mine">Mine</option>
+                  <option value="shared">Shared</option>
+                </select>
+              ) : null}
               <select value={mapTheme} onChange={(event) => setMapTheme(event.target.value)} className={`${inputClass} sm:w-44`}>
                 {Object.entries(mapThemes).map(([value, theme]) => (
                   <option key={value} value={value}>{theme.label}</option>
                 ))}
               </select>
-              <button onClick={fetchPois} disabled={loading || !auth.accessToken} className={buttonClass}>{loading ? 'Loading...' : 'Search'}</button>
-              <label className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300">
-                <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
-                Include archived
-              </label>
+              <button onClick={fetchPois} disabled={loading} className={buttonClass}>{loading ? 'Loading...' : 'Search'}</button>
+              {auth.accessToken ? (
+                <label className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300">
+                  <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
+                  Include archived
+                </label>
+              ) : null}
             </div>
 
             <div className="overflow-hidden rounded-xl border border-zinc-800">
@@ -641,6 +625,7 @@ export default function HomePage() {
                     <div className="font-semibold">{poi.name}</div>
                     <div className="text-xs text-zinc-400">{poi.category} | owner: {poi.owner_username}</div>
                     <div className="mt-1 flex gap-2 text-[11px]">
+                      {poi.is_public ? <span className="rounded bg-emerald-900 px-2 py-0.5 text-emerald-200">Public</span> : <span className="rounded bg-zinc-800 px-2 py-0.5 text-zinc-300">Private</span>}
                       {poi.owned_by_me ? <span className="rounded bg-teal-900 px-2 py-0.5 text-teal-200">Mine</span> : null}
                       {poi.shared_with_me ? <span className="rounded bg-blue-900 px-2 py-0.5 text-blue-200">Shared</span> : null}
                       {poi.archived_at ? <span className="rounded bg-zinc-800 px-2 py-0.5 text-zinc-300">Archived</span> : null}
@@ -666,6 +651,7 @@ export default function HomePage() {
               </div>
             </div>
 
+            {auth.accessToken ? (
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
               <h2 className="mb-2 text-lg font-medium">Create POI</h2>
               {pendingLatLng ? (
@@ -678,17 +664,31 @@ export default function HomePage() {
               <form onSubmit={createPoi} className="grid gap-2">
                 <input value={poiForm.name} placeholder="Name" onChange={(e) => setPoiForm((p) => ({ ...p, name: e.target.value }))} className={inputClass} required />
                 <textarea value={poiForm.description} placeholder="Description (optional)" onChange={(e) => setPoiForm((p) => ({ ...p, description: e.target.value }))} className={inputClass} />
-                <input value={poiForm.category} placeholder="Category" onChange={(e) => setPoiForm((p) => ({ ...p, category: e.target.value }))} className={inputClass} required />
+                <select value={poiForm.categoryId} onChange={(e) => setPoiForm((p) => ({ ...p, categoryId: e.target.value }))} className={inputClass} required>
+                  {categories.length === 0 ? <option value="">No categories available</option> : null}
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+                <label className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={poiForm.isPublic}
+                    onChange={(e) => setPoiForm((p) => ({ ...p, isPublic: e.target.checked }))}
+                  />
+                  Public POI (default is private)
+                </label>
                 <div className="flex gap-2">
                   <input value={poiForm.lat} placeholder="Latitude" onChange={(e) => setPoiForm((p) => ({ ...p, lat: e.target.value }))} className={inputClass} readOnly={Boolean(pendingLatLng)} required />
                   <input value={poiForm.lng} placeholder="Longitude" onChange={(e) => setPoiForm((p) => ({ ...p, lng: e.target.value }))} className={inputClass} readOnly={Boolean(pendingLatLng)} required />
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" disabled={!auth.accessToken} className={`${buttonClass} flex-1`}>Save POI</button>
+                  <button type="submit" disabled={!auth.accessToken || !poiForm.categoryId} className={`${buttonClass} flex-1`}>Save POI</button>
                   <button type="button" onClick={clearPendingPin} className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-700">Clear pin</button>
                 </div>
               </form>
             </div>
+            ) : null}
 
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
               <h2 className="mb-2 text-lg font-medium">Selected POI</h2>
@@ -699,9 +699,25 @@ export default function HomePage() {
                   <strong>{selectedPoi.name}</strong>
                   <span className="text-zinc-300">{selectedPoi.description || 'No description provided'}</span>
                   <span className="text-zinc-300">Category: {selectedPoi.category}</span>
+                  {auth.accessToken && selectedPoi.canEdit ? (
+                    <div className="grid gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-2">
+                      <div className="text-xs font-semibold text-zinc-300">Change category</div>
+                      <div className="flex gap-2">
+                        <select value={selectedPoiCategoryId} onChange={(e) => setSelectedPoiCategoryId(e.target.value)} className={inputClass}>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>{category.name}</option>
+                          ))}
+                        </select>
+                        <button type="button" className={buttonClass} onClick={updateSelectedPoiCategory} disabled={!selectedPoiCategoryId || selectedPoiCategoryId === selectedPoi.category_id}>
+                          Save Category
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                  <span className="text-zinc-300">Visibility: {selectedPoi.is_public ? 'Public' : 'Private'}</span>
                   <span className="text-zinc-300">Owner: {selectedPoi.owner_username}</span>
                   <span className="text-zinc-300">Status: {selectedPoi.archived_at ? 'Archived' : 'Active'}</span>
-                  <div className="flex gap-2">
+                  {auth.accessToken ? <div className="flex gap-2">
                     {selectedPoi.canEdit && !selectedPoi.archived_at ? (
                       <button onClick={() => archivePoi(selectedPoi.id)} className={`${buttonClass} flex-1`}>Archive POI</button>
                     ) : null}
@@ -709,9 +725,9 @@ export default function HomePage() {
                       <button onClick={() => restorePoi(selectedPoi.id)} className={`${buttonClass} flex-1`}>Restore POI</button>
                     ) : null}
                     <button onClick={() => fetchPoiDetail(selectedPoi.id)} className={`${buttonClass} flex-1`}>Refresh Details</button>
-                  </div>
+                  </div> : null}
 
-                  {selectedPoi.canShare ? (
+                  {auth.accessToken && selectedPoi.canShare ? (
                     <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-2">
                       <div className="mb-2 text-xs font-semibold text-zinc-300">Share with user</div>
                       <div className="flex gap-2">
@@ -731,12 +747,12 @@ export default function HomePage() {
                     </div>
                   ) : null}
 
-                  <label className="grid gap-2 text-sm text-zinc-300">
+                  {auth.accessToken ? <label className="grid gap-2 text-sm text-zinc-300">
                     Upload photo (max {uploadLimitMb}MB)
                     <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadPhoto} className={inputClass} disabled={!selectedPoi.canEdit} />
-                  </label>
+                  </label> : null}
 
-                  <div className="grid max-h-48 gap-2 overflow-auto">
+                  {auth.accessToken ? <div className="grid max-h-48 gap-2 overflow-auto">
                     {(selectedPoi.photos || []).map((photo) => (
                       <div key={photo.id} className="rounded-lg border border-zinc-800 p-2">
                         <a href={`/api/photos/${photo.id}`} target="_blank" rel="noreferrer" className="text-teal-400 hover:text-teal-300">{photo.filename}</a>
@@ -753,44 +769,14 @@ export default function HomePage() {
                         ) : null}
                       </div>
                     ))}
-                  </div>
+                  </div> : null}
                 </div>
               )}
             </div>
 
             {auth.role === 'admin' ? (
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
-                <h2 className="mb-2 text-lg font-medium">Admin Users</h2>
-                <form onSubmit={createUser} className="grid gap-2">
-                  <input value={userForm.username} onChange={(e) => setUserForm((p) => ({ ...p, username: e.target.value }))} placeholder="Username" className={inputClass} required />
-                  <input type="password" value={userForm.password} onChange={(e) => setUserForm((p) => ({ ...p, password: e.target.value }))} placeholder="Password" className={inputClass} required />
-                  <select value={userForm.role} onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))} className={inputClass}>
-                    <option value="user">user</option>
-                    <option value="admin">admin</option>
-                  </select>
-                  <button type="submit" className={buttonClass}>Create User</button>
-                </form>
-
-                <label className="mt-3 flex items-center gap-2 text-xs text-zinc-300">
-                  <input type="checkbox" checked={includeArchivedUsers} onChange={(e) => setIncludeArchivedUsers(e.target.checked)} />
-                  Include archived users
-                </label>
-
-                <div className="mt-2 grid max-h-56 gap-2 overflow-auto">
-                  {users.map((userItem) => (
-                    <div key={userItem.id} className="rounded border border-zinc-800 p-2 text-xs">
-                      <div className="font-semibold">{userItem.username} ({userItem.role})</div>
-                      <div className="mt-1 text-zinc-400">{userItem.archived_at ? 'Archived' : 'Active'}</div>
-                      <div className="mt-2">
-                        {!userItem.archived_at ? (
-                          <button type="button" className={buttonClass} onClick={() => archiveUser(userItem.id)}>Archive</button>
-                        ) : (
-                          <button type="button" className={buttonClass} onClick={() => restoreUser(userItem.id)}>Restore</button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-300">
+                User and category administration moved to the top menu.
               </div>
             ) : null}
           </div>

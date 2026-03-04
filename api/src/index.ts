@@ -84,6 +84,7 @@ const responseHeaders = {
 
 const randomId = () => crypto.randomUUID()
 const toBool = (value?: string) => value === '1' || value === 'true'
+const toFlag = (value: unknown) => value === true || value === 1 || value === '1' || value === 'true'
 
 const normalizeRows = <T>(rows: unknown): T[] => {
   if (!Array.isArray(rows)) return []
@@ -236,6 +237,14 @@ const sanitizeFilename = (name: string) => {
 
 const isAllowedRole = (value: string): value is UserRole => value === 'admin' || value === 'user'
 
+const fetchActiveCategory = async (conn: mariadb.PoolConnection, categoryId: string) => {
+  const rows = normalizeRows<Record<string, unknown>>(await conn.query(
+    'SELECT id, name FROM categories WHERE id = ? AND archived_at IS NULL LIMIT 1',
+    [categoryId]
+  ))
+  return rows[0] ?? null
+}
+
 const userCanWritePoi = async (conn: mariadb.PoolConnection, poiId: string, user: AccessUser) => {
   if (user.role === 'admin') return true
   const rows = normalizeRows<Record<string, unknown>>(await conn.query(
@@ -251,9 +260,17 @@ const userCanReadPoi = async (conn: mariadb.PoolConnection, poiId: string, user:
     `SELECT p.id
      FROM pois p
      LEFT JOIN poi_shares s ON s.poi_id = p.id AND s.shared_with_user_id = ? AND s.archived_at IS NULL
-     WHERE p.id = ? AND p.archived_at IS NULL AND (p.owner_user_id = ? OR s.id IS NOT NULL)
+     WHERE p.id = ? AND p.archived_at IS NULL AND (p.is_public = TRUE OR p.owner_user_id = ? OR s.id IS NOT NULL)
      LIMIT 1`,
     [user.id, poiId, user.id]
+  ))
+  return rows.length > 0
+}
+
+const publicCanReadPoi = async (conn: mariadb.PoolConnection, poiId: string) => {
+  const rows = normalizeRows<Record<string, unknown>>(await conn.query(
+    'SELECT id FROM pois WHERE id = ? AND archived_at IS NULL AND is_public = TRUE LIMIT 1',
+    [poiId]
   ))
   return rows.length > 0
 }
@@ -589,78 +606,200 @@ const app = new Elysia()
       return { restored: true }
     })
   })
+  .get('/api/categories', async ({ headers, query, set }) => {
+    const user = await requireAccess(headers.authorization)
+    const filters = query as Record<string, string>
+    return withConn(set, async (conn) => {
+      const includeArchived = user?.role === 'admin' && toBool(filters.includeArchived)
+      const rows = normalizeRows<Record<string, unknown>>(await conn.query(
+        `SELECT id, name, created_at, archived_at
+         FROM categories
+         ${includeArchived ? '' : 'WHERE archived_at IS NULL'}
+         ORDER BY name ASC`
+      ))
+      return rows
+    })
+  })
+  .post('/api/admin/categories', async ({ headers, body, set }) => {
+    const user = await requireAccess(headers.authorization)
+    if (!requireAdmin(user, set)) return { error: 'Forbidden' }
+    const payload = body as Dict
+    const name = String(payload.name ?? '').trim()
+    if (!name) {
+      set.status = 400
+      return { error: 'name is required' }
+    }
+    return withConn(set, async (conn) => {
+      const existing = normalizeRows<Record<string, unknown>>(await conn.query(
+        'SELECT id, archived_at FROM categories WHERE LOWER(name) = LOWER(?) LIMIT 1',
+        [name]
+      ))
+      if (existing.length > 0) {
+        if (existing[0].archived_at) {
+          await conn.query('UPDATE categories SET name = ?, archived_at = NULL WHERE id = ?', [name, existing[0].id])
+          return { id: existing[0].id, restored: true }
+        }
+        set.status = 409
+        return { error: 'Category already exists' }
+      }
+      const id = randomId()
+      await conn.query('INSERT INTO categories (id, name) VALUES (?, ?)', [id, name])
+      set.status = 201
+      return { id }
+    })
+  })
+  .patch('/api/admin/categories/:id', async ({ headers, params, body, set }) => {
+    const user = await requireAccess(headers.authorization)
+    if (!requireAdmin(user, set)) return { error: 'Forbidden' }
+    const payload = body as Dict
+    const name = String(payload.name ?? '').trim()
+    if (!name) {
+      set.status = 400
+      return { error: 'name is required' }
+    }
+    return withConn(set, async (conn) => {
+      const rows = normalizeRows<Record<string, unknown>>(await conn.query(
+        'SELECT id FROM categories WHERE id = ? LIMIT 1',
+        [params.id]
+      ))
+      if (rows.length === 0) {
+        set.status = 404
+        return { error: 'Category not found' }
+      }
+      const duplicate = normalizeRows<Record<string, unknown>>(await conn.query(
+        'SELECT id FROM categories WHERE LOWER(name) = LOWER(?) AND id <> ? LIMIT 1',
+        [name, params.id]
+      ))
+      if (duplicate.length > 0) {
+        set.status = 409
+        return { error: 'Category already exists' }
+      }
+      await conn.query('UPDATE categories SET name = ? WHERE id = ?', [name, params.id])
+      await conn.query('UPDATE pois SET category = ? WHERE category_id = ?', [name, params.id])
+      return { updated: true }
+    })
+  })
+  .delete('/api/admin/categories/:id', async ({ headers, params, set }) => {
+    const user = await requireAccess(headers.authorization)
+    if (!requireAdmin(user, set)) return { error: 'Forbidden' }
+    return withConn(set, async (conn) => {
+      const activePoiRows = normalizeRows<Record<string, unknown>>(await conn.query(
+        'SELECT id FROM pois WHERE category_id = ? AND archived_at IS NULL LIMIT 1',
+        [params.id]
+      ))
+      if (activePoiRows.length > 0) {
+        set.status = 409
+        return { error: 'Category is used by active POIs' }
+      }
+      const result = await conn.query(
+        'UPDATE categories SET archived_at = UTC_TIMESTAMP() WHERE id = ? AND archived_at IS NULL',
+        [params.id]
+      )
+      if (!result.affectedRows) {
+        set.status = 404
+        return { error: 'Category not found' }
+      }
+      return { archived: true }
+    })
+  })
+  .post('/api/admin/categories/:id/restore', async ({ headers, params, set }) => {
+    const user = await requireAccess(headers.authorization)
+    if (!requireAdmin(user, set)) return { error: 'Forbidden' }
+    return withConn(set, async (conn) => {
+      const result = await conn.query(
+        'UPDATE categories SET archived_at = NULL WHERE id = ? AND archived_at IS NOT NULL',
+        [params.id]
+      )
+      if (!result.affectedRows) {
+        set.status = 404
+        return { error: 'Category not found or not archived' }
+      }
+      return { restored: true }
+    })
+  })
   .get('/api/pois', async ({ query, set, headers }) => {
     const user = await requireAccess(headers.authorization)
-    if (!user) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
     const filters = query as Record<string, string>
     return withConn(set, async (conn) => {
       const where: string[] = []
       const params: unknown[] = []
 
-      const includeArchived = toBool(filters.includeArchived)
+      const includeArchived = user?.role === 'admin' && toBool(filters.includeArchived)
       if (!includeArchived) where.push('p.archived_at IS NULL')
-      if (filters.category) {
-        where.push('p.category = ?')
-        params.push(filters.category)
+      if (filters.categoryId) {
+        where.push('p.category_id = ?')
+        params.push(filters.categoryId)
       }
       if (filters.q) {
         where.push('(p.name LIKE ? OR p.description LIKE ?)')
         params.push(`%${filters.q}%`, `%${filters.q}%`)
       }
 
-      if (user.role !== 'admin') {
-        where.push('(p.owner_user_id = ? OR s.id IS NOT NULL)')
-        params.push(user.id)
+      if (user?.role !== 'admin') {
+        if (user) {
+          where.push('(p.is_public = TRUE OR p.owner_user_id = ? OR s.id IS NOT NULL)')
+          params.push(user.id)
+        } else {
+          where.push('p.is_public = TRUE')
+        }
       }
 
       const scope = String(filters.scope ?? 'all')
-      if (scope === 'mine') {
+      if (user && scope === 'mine') {
         where.push('p.owner_user_id = ?')
         params.push(user.id)
-      } else if (scope === 'shared') {
+      } else if (user && scope === 'shared') {
         where.push('s.id IS NOT NULL')
       }
+
+      const ownedByMeExpr = user
+        ? 'CASE WHEN p.owner_user_id = ? THEN TRUE ELSE FALSE END AS owned_by_me'
+        : 'FALSE AS owned_by_me'
+      const sharedWithMeExpr = user
+        ? 'CASE WHEN s.id IS NOT NULL THEN TRUE ELSE FALSE END AS shared_with_me'
+        : 'FALSE AS shared_with_me'
+      const sharesJoin = user
+        ? 'LEFT JOIN poi_shares s ON s.poi_id = p.id AND s.shared_with_user_id = ? AND s.archived_at IS NULL'
+        : 'LEFT JOIN poi_shares s ON 1 = 0'
 
       const limit = Math.min(Math.max(Number(filters.limit ?? 200), 1), 500)
       const sql = `
         SELECT
           p.id, p.owner_user_id, u.username AS owner_username,
-          p.name, p.description, p.category, p.lat, p.lng,
-          p.created_at, p.updated_at, p.archived_at,
-          CASE WHEN p.owner_user_id = ? THEN TRUE ELSE FALSE END AS owned_by_me,
-          CASE WHEN s.id IS NOT NULL THEN TRUE ELSE FALSE END AS shared_with_me
+          p.name, p.description, p.category_id, c.name AS category, p.lat, p.lng,
+          p.is_public, p.created_at, p.updated_at, p.archived_at,
+          ${ownedByMeExpr},
+          ${sharedWithMeExpr}
         FROM pois p
         JOIN users u ON u.id = p.owner_user_id
-        LEFT JOIN poi_shares s ON s.poi_id = p.id AND s.shared_with_user_id = ? AND s.archived_at IS NULL
+        JOIN categories c ON c.id = p.category_id
+        ${sharesJoin}
         ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
         ORDER BY p.created_at DESC
         LIMIT ?
       `
 
-      return normalizeRows<Record<string, unknown>>(await conn.query(sql, [user.id, user.id, ...params, limit]))
+      const queryParams = user ? [user.id, user.id, ...params, limit] : [...params, limit]
+      return normalizeRows<Record<string, unknown>>(await conn.query(sql, queryParams))
     })
   })
   .get('/api/pois/:id', async ({ params, set, headers }) => {
     const user = await requireAccess(headers.authorization)
-    if (!user) {
-      set.status = 401
-      return { error: 'Unauthorized' }
-    }
     return withConn(set, async (conn) => {
-      const canRead = await userCanReadPoi(conn, params.id, user)
+      const canRead = user
+        ? await userCanReadPoi(conn, params.id, user)
+        : await publicCanReadPoi(conn, params.id)
       if (!canRead) {
         set.status = 404
         return { error: 'POI not found' }
       }
       const rows = normalizeRows<Record<string, unknown>>(await conn.query(
         `SELECT p.id, p.owner_user_id, u.username AS owner_username,
-                p.name, p.description, p.category, p.lat, p.lng,
-                p.created_at, p.updated_at, p.archived_at
+                p.name, p.description, p.category_id, c.name AS category, p.lat, p.lng,
+                p.is_public, p.created_at, p.updated_at, p.archived_at
          FROM pois p
          JOIN users u ON u.id = p.owner_user_id
+         JOIN categories c ON c.id = p.category_id
          WHERE p.id = ? LIMIT 1`,
         [params.id]
       ))
@@ -684,10 +823,10 @@ const app = new Elysia()
       const ownerUserId = String(rows[0].owner_user_id ?? '')
       return {
         ...rows[0],
-        photos,
-        shares,
-        canShare: user.role === 'admin' || ownerUserId === user.id,
-        canEdit: user.role === 'admin' || ownerUserId === user.id
+        photos: user ? photos : [],
+        shares: user ? shares : [],
+        canShare: user ? (user.role === 'admin' || ownerUserId === user.id) : false,
+        canEdit: user ? (user.role === 'admin' || ownerUserId === user.id) : false
       }
     })
   })
@@ -763,12 +902,13 @@ const app = new Elysia()
     const description = payload.description === undefined || payload.description === null
       ? ''
       : String(payload.description).trim()
-    const category = String(payload.category ?? '').trim()
+    const categoryId = String(payload.categoryId ?? '').trim()
+    const isPublic = toFlag(payload.isPublic)
     const lat = Number(payload.lat)
     const lng = Number(payload.lng)
-    if (!name || !category) {
+    if (!name || !categoryId) {
       set.status = 400
-      return { error: 'name and category are required' }
+      return { error: 'name and categoryId are required' }
     }
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       set.status = 400
@@ -776,11 +916,16 @@ const app = new Elysia()
     }
 
     return withConn(set, async (conn) => {
+      const category = await fetchActiveCategory(conn, categoryId)
+      if (!category) {
+        set.status = 400
+        return { error: 'Category not found or archived' }
+      }
       const id = randomId()
       await conn.query(
-        `INSERT INTO pois (id, owner_user_id, name, description, category, lat, lng, location)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326))`,
-        [id, user.id, name, description, category, lat, lng, lng, lat]
+        `INSERT INTO pois (id, owner_user_id, name, description, category_id, category, is_public, lat, lng, location)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326))`,
+        [id, user.id, name, description, categoryId, String(category.name ?? ''), isPublic, lat, lng, lng, lat]
       )
       set.status = 201
       return { id }
@@ -810,21 +955,38 @@ const app = new Elysia()
       const current = existingRows[0]
       const lat = payload.lat === undefined ? Number(current.lat) : Number(payload.lat)
       const lng = payload.lng === undefined ? Number(current.lng) : Number(payload.lng)
+      const nextCategoryId = payload.categoryId === undefined || payload.categoryId === null
+        ? null
+        : String(payload.categoryId).trim()
+      const nextIsPublic = payload.isPublic === undefined || payload.isPublic === null
+        ? null
+        : toFlag(payload.isPublic)
       if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
         set.status = 400
         return { error: 'Invalid coordinates' }
+      }
+      let nextCategoryName: string | null = null
+      if (nextCategoryId !== null) {
+        const category = await fetchActiveCategory(conn, nextCategoryId)
+        if (!category) {
+          set.status = 400
+          return { error: 'Category not found or archived' }
+        }
+        nextCategoryName = String(category.name ?? '')
       }
 
       const result = await conn.query(
         `UPDATE pois
          SET name = COALESCE(?, name),
              description = COALESCE(?, description),
+             category_id = COALESCE(?, category_id),
              category = COALESCE(?, category),
+             is_public = COALESCE(?, is_public),
              lat = ?,
              lng = ?,
              location = ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326)
          WHERE id = ? AND archived_at IS NULL`,
-        [payload.name, payload.description, payload.category, lat, lng, lng, lat, params.id]
+        [payload.name, payload.description, nextCategoryId, nextCategoryName, nextIsPublic, lat, lng, lng, lat, params.id]
       )
       if (!result.affectedRows) {
         set.status = 404
