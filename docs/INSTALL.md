@@ -9,16 +9,29 @@
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
+- [Required Local Paths](#required-local-paths)
 - [Configure Environment](#configure-environment)
 - [Build Local Images](#build-local-images)
 - [Install Services](#install-services)
 - [Verify Installation](#verify-installation)
+- [First Login and Smoke Test](#first-login-and-smoke-test)
+- [Optional Docs Authentication](#optional-docs-authentication)
 
 ## Prerequisites
 - Linux user session with `systemd --user`
 - `podman` installed
 - `systemctl` available
 - `curl` available for health checks
+- `python` available for integration scripts
+
+[Go to TOC](#table-of-contents)
+
+## Required Local Paths
+- Runtime env file: `~/.config/poi-stack/poi.env`
+- Backup output directory: `~/.config/poi-stack/backups/`
+- Nightly integration logs: `~/.config/poi-stack/logs/`
+- User unit install location: `~/.config/systemd/user/`
+- User Quadlet location: `~/.config/containers/systemd/`
 
 [Go to TOC](#table-of-contents)
 
@@ -55,6 +68,7 @@ Run:
 ```
 
 This copies Quadlet files into `~/.config/containers/systemd`, reloads user systemd, and enables/starts all POI services.
+It also installs and enables backup and nightly integration timers.
 
 [Go to TOC](#table-of-contents)
 
@@ -71,6 +85,34 @@ Expected local endpoints:
 - `http://localhost:9010/ready`
 - `http://localhost:9010/openapi.json`
 - `http://localhost:9010/docs`
+
+[Go to TOC](#table-of-contents)
+
+## First Login and Smoke Test
+1. Request access token:
+
+```bash
+curl -X POST http://localhost:9010/auth/login \
+  -H "content-type: application/json" \
+  -d '{"username":"admin","password":"change_me_admin_password"}'
+```
+
+2. Run full integration checks:
+
+```bash
+./scripts/test-integration.sh
+```
+
+[Go to TOC](#table-of-contents)
+
+## Optional Docs Authentication
+- Enable docs protection by setting `DOCS_AUTH_ENABLED=true` in `~/.config/poi-stack/poi.env`.
+- Keep `DOCS_AUTH_USER` and `DOCS_AUTH_PASS` populated.
+- Restart services after changing auth flags:
+
+```bash
+./scripts/restart.sh
+```
 
 [Go to TOC](#table-of-contents)
 

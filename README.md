@@ -14,6 +14,7 @@
 - [Quick Start](#quick-start)
 - [Repository Layout](#repository-layout)
 - [Operations](#operations)
+- [Operational Checklist](#operational-checklist)
 - [Documentation Index](#documentation-index)
 
 ## Overview
@@ -65,9 +66,19 @@ This project provides an OpenStreetMap-based Point of Interest platform with des
 - Rebuild: `./scripts/rebuild.sh`
 - Migrate: `./scripts/migrate.sh`
 - Integration tests: `./scripts/test-integration.sh`
+- Nightly test runner: `./scripts/test-nightly.sh`
 - Logs: `./scripts/logs.sh api`
 - Backup: `./scripts/backup.sh`
 - Restore: `./scripts/restore.sh /path/to/dump.sql`
+
+[Go to TOC](#table-of-contents)
+
+## Operational Checklist
+1. Validate runtime config: `./scripts/env-check.sh`.
+2. Confirm service health: `./scripts/health.sh`.
+3. Review services and timers: `./scripts/status.sh`.
+4. Run integration suite before/after major changes: `./scripts/test-integration.sh`.
+5. Confirm scheduled jobs: `systemctl --user list-timers | grep poi-`.
 
 [Go to TOC](#table-of-contents)
 
@@ -75,6 +86,7 @@ This project provides an OpenStreetMap-based Point of Interest platform with des
 - `docs/README.md`
 - `docs/INSTALL.md`
 - `docs/OPERATIONS.md`
+- `docs/SCRIPTS.md`
 - `docs/BACKUP_RESTORE.md`
 - `docs/TROUBLESHOOTING.md`
 - `docs/SECURITY.md`

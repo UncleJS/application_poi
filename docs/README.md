@@ -11,6 +11,8 @@
 - [Purpose](#purpose)
 - [Document Map](#document-map)
 - [Audience](#audience)
+- [How to Read This Docs Set](#how-to-read-this-docs-set)
+- [Change Control Notes](#change-control-notes)
 
 ## Purpose
 This directory contains operational and technical documentation for the OSM POI platform running on rootless Podman with systemd user services.
@@ -20,6 +22,7 @@ This directory contains operational and technical documentation for the OSM POI 
 ## Document Map
 - `INSTALL.md` setup and first boot
 - `OPERATIONS.md` service lifecycle and day-2 operations
+- `SCRIPTS.md` full reference for every shell automation script
 - `BACKUP_RESTORE.md` backup, restore, and safety steps
 - `TROUBLESHOOTING.md` common failures and recovery actions
 - `SECURITY.md` hardening and authentication controls
@@ -32,6 +35,22 @@ This directory contains operational and technical documentation for the OSM POI 
 - Developers building API and frontend services
 - Operators maintaining local and server deployments
 - Security reviewers validating auth and data handling
+
+[Go to TOC](#table-of-contents)
+
+## How to Read This Docs Set
+- Start with `INSTALL.md` for first-time deployment.
+- Use `OPERATIONS.md` as the daily runbook once the stack is up.
+- Keep `SCRIPTS.md` open when working with automation commands.
+- Use `BACKUP_RESTORE.md` and `TROUBLESHOOTING.md` during incidents.
+- Use `API.md` and `SECURITY.md` when implementing or reviewing changes.
+
+[Go to TOC](#table-of-contents)
+
+## Change Control Notes
+- Every operational change should be validated with `./scripts/health.sh`.
+- Application behavior changes should run through `./scripts/test-integration.sh`.
+- Backup and restore workflows should be periodically exercised in local test cycles.
 
 [Go to TOC](#table-of-contents)
 

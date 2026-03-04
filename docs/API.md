@@ -10,9 +10,11 @@
 ## Table of Contents
 - [OpenAPI Contract](#openapi-contract)
 - [Local Endpoints](#local-endpoints)
+- [Authentication Flow](#authentication-flow)
 - [Authentication Routes](#authentication-routes)
 - [POI Routes](#poi-routes)
 - [Photo Routes](#photo-routes)
+- [Common Request Examples](#common-request-examples)
 - [Date and Time Formats](#date-and-time-formats)
 
 ## OpenAPI Contract
@@ -28,6 +30,14 @@
 - Ready: `GET /ready`
 - Spec: `GET /openapi.json`
 - Docs: `GET /docs`
+
+[Go to TOC](#table-of-contents)
+
+## Authentication Flow
+1. Call `POST /auth/login` with admin username/password.
+2. Use `accessToken` as `Authorization: Bearer <token>` for write routes.
+3. Refresh with `POST /auth/refresh` before/after access expiry.
+4. Keep refresh token private; do not log or commit it.
 
 [Go to TOC](#table-of-contents)
 
@@ -52,6 +62,40 @@
 - `GET /api/photos/{id}`
 - `DELETE /api/photos/{id}` archive only (JWT required)
 - `POST /api/photos/{id}/restore` restore flow (JWT required)
+
+[Go to TOC](#table-of-contents)
+
+## Common Request Examples
+Login:
+
+```bash
+curl -X POST http://localhost:9010/auth/login \
+  -H "content-type: application/json" \
+  -d '{"username":"admin","password":"change_me_admin_password"}'
+```
+
+Create POI:
+
+```bash
+curl -X POST http://localhost:9010/api/pois \
+  -H "content-type: application/json" \
+  -H "authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"name":"POI","description":"Example","category":"general","lat":-33.9,"lng":18.4}'
+```
+
+Radius query:
+
+```bash
+curl "http://localhost:9010/api/pois?lat=-33.9&lng=18.4&radiusKm=10"
+```
+
+Upload photo:
+
+```bash
+curl -X POST http://localhost:9010/api/pois/<POI_ID>/photos \
+  -H "authorization: Bearer <ACCESS_TOKEN>" \
+  -F "photo=@/path/to/image.png;type=image/png"
+```
 
 [Go to TOC](#table-of-contents)
 

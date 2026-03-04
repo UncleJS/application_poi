@@ -26,7 +26,7 @@ done
 log "Removing Quadlet unit files"
 rm -f "${USER_QUADLET_DIR}/poi-"*.container
 rm -f "${USER_QUADLET_DIR}/poi.network" "${USER_QUADLET_DIR}/poi-db.volume"
-rm -f "${USER_SYSTEMD_DIR}/poi-backup.service" "${USER_SYSTEMD_DIR}/poi-backup.timer"
+rm -f "${USER_SYSTEMD_DIR}/poi-backup.service" "${USER_SYSTEMD_DIR}/poi-backup.timer" "${USER_SYSTEMD_DIR}/poi-integration.service" "${USER_SYSTEMD_DIR}/poi-integration.timer"
 
 systemctl --user daemon-reload
 

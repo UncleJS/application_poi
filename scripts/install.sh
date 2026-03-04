@@ -37,6 +37,7 @@ for unit in "${STACK_AUX_UNITS[@]}"; do
   systemctl --user enable "${unit}" >/dev/null 2>&1 || true
 done
 systemctl --user start "poi-backup.timer"
+systemctl --user start "poi-integration.timer"
 
 log "Install complete. Current service state:"
 "${SCRIPT_DIR}/status.sh"

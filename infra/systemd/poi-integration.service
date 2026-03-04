@@ -1,0 +1,7 @@
+[Unit]
+Description=POI stack nightly integration test job
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/0_opencode/application_poi
+ExecStart=%h/0_opencode/application_poi/scripts/test-nightly.sh

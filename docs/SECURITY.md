@@ -13,6 +13,8 @@
 - [Input Validation](#input-validation)
 - [Secrets Handling](#secrets-handling)
 - [Data Lifecycle](#data-lifecycle)
+- [Hardening Checklist](#hardening-checklist)
+- [Operational Security Practices](#operational-security-practices)
 
 ## Authentication Model
 - JWT-based authentication for write operations.
@@ -48,6 +50,23 @@
 - API delete operations are archive-only via `archived_at` fields.
 - No hard-delete behavior in normal application routes.
 - Restore workflows use SQL backups for operational recovery.
+
+[Go to TOC](#table-of-contents)
+
+## Hardening Checklist
+- Set strong unique values for all secrets in `poi.env`.
+- Enable docs auth in shared environments (`DOCS_AUTH_ENABLED=true`).
+- Restrict service exposure to loopback where possible.
+- Keep Podman/system packages updated and rebuild images regularly.
+- Rotate tokens and DB passwords after team/user changes.
+
+[Go to TOC](#table-of-contents)
+
+## Operational Security Practices
+- Run `./scripts/env-check.sh` after any env file edits.
+- Run `./scripts/test-integration.sh` after auth or route changes.
+- Keep backup and nightly test timers enabled to detect drift quickly.
+- Review `journalctl --user -u poi-api.service` for repeated auth failures.
 
 [Go to TOC](#table-of-contents)
 

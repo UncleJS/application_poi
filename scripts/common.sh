@@ -9,6 +9,7 @@ USER_SYSTEMD_DIR="${HOME}/.config/systemd/user"
 STACK_CONFIG_DIR="${HOME}/.config/poi-stack"
 STACK_ENV_FILE="${STACK_CONFIG_DIR}/poi.env"
 BACKUP_DIR="${STACK_CONFIG_DIR}/backups"
+LOG_DIR="${STACK_CONFIG_DIR}/logs"
 SYSTEMD_SRC_DIR="${PROJECT_ROOT}/infra/systemd"
 
 STACK_SERVICES=(
@@ -21,6 +22,8 @@ STACK_SERVICES=(
 STACK_AUX_UNITS=(
   "poi-backup.service"
   "poi-backup.timer"
+  "poi-integration.service"
+  "poi-integration.timer"
 )
 
 log() {
@@ -46,7 +49,7 @@ require_user_systemd() {
 }
 
 ensure_dirs() {
-  mkdir -p "${USER_QUADLET_DIR}" "${USER_SYSTEMD_DIR}" "${STACK_CONFIG_DIR}" "${BACKUP_DIR}"
+  mkdir -p "${USER_QUADLET_DIR}" "${USER_SYSTEMD_DIR}" "${STACK_CONFIG_DIR}" "${BACKUP_DIR}" "${LOG_DIR}"
 }
 
 ensure_env_file() {

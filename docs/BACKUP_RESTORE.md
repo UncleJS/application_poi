@@ -12,6 +12,8 @@
 - [Scheduled Backups](#scheduled-backups)
 - [Create Backup](#create-backup)
 - [Restore Backup](#restore-backup)
+- [Retention Guidance](#retention-guidance)
+- [Restore Verification Checklist](#restore-verification-checklist)
 - [Safety Notes](#safety-notes)
 
 ## Backup Strategy
@@ -47,6 +49,21 @@ Run:
 ```
 
 Restore is destructive to current live data in the target DB and should only be used when intentional.
+
+[Go to TOC](#table-of-contents)
+
+## Retention Guidance
+- Keep at least one daily backup for 14 days.
+- Keep at least one weekly backup for 8 weeks.
+- Copy backups off-host if the environment is critical.
+
+[Go to TOC](#table-of-contents)
+
+## Restore Verification Checklist
+1. Run `./scripts/restore.sh /absolute/path/to/backup.sql`.
+2. Run `./scripts/health.sh` to confirm API/database readiness.
+3. Run `./scripts/test-integration.sh` to verify end-to-end behavior.
+4. Confirm expected POI/photo counts via API queries.
 
 [Go to TOC](#table-of-contents)
 

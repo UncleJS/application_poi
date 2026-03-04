@@ -13,7 +13,9 @@
 - [Health and Readiness](#health-and-readiness)
 - [Database Migrations](#database-migrations)
 - [Integration Test Suite](#integration-test-suite)
+- [Nightly Integration Timer](#nightly-integration-timer)
 - [Backup Timer](#backup-timer)
+- [Incident Response Quick Steps](#incident-response-quick-steps)
 - [Rebuild Workflow](#rebuild-workflow)
 - [Uninstall](#uninstall)
 
@@ -30,6 +32,7 @@
 - Web logs: `./scripts/logs.sh web`
 - DB logs: `./scripts/logs.sh db`
 - Proxy logs: `./scripts/logs.sh proxy`
+- Nightly integration run logs: `~/.config/poi-stack/logs/integration_latest.log`
 
 [Go to TOC](#table-of-contents)
 
@@ -67,6 +70,27 @@ This validates login, refresh, POI CRUD, photo upload, archive/restore flows, an
 
 [Go to TOC](#table-of-contents)
 
+## Nightly Integration Timer
+The install process deploys and enables:
+- `poi-integration.service`
+- `poi-integration.timer`
+
+Timer schedule:
+- `OnCalendar=*-*-* 02:45:00`
+- `Persistent=true`
+
+Manual run and logs:
+
+```bash
+systemctl --user start poi-integration.service
+ls ~/.config/poi-stack/logs
+```
+
+The test log file is written to `~/.config/poi-stack/logs/integration_*.log` and symlinked as `integration_latest.log`.
+Log retention defaults to 14 files and can be overridden with `NIGHTLY_LOG_RETAIN_COUNT`.
+
+[Go to TOC](#table-of-contents)
+
 ## Backup Timer
 The install process deploys and enables:
 - `poi-backup.service`
@@ -82,6 +106,16 @@ Check timer status:
 systemctl --user status poi-backup.timer
 systemctl --user list-timers | grep poi-backup
 ```
+
+[Go to TOC](#table-of-contents)
+
+## Incident Response Quick Steps
+1. Snapshot status: `./scripts/status.sh`.
+2. Check endpoint health: `./scripts/health.sh`.
+3. Tail failing service logs: `./scripts/logs.sh api` or `./scripts/logs.sh proxy`.
+4. Re-run integration checks to scope impact: `./scripts/test-integration.sh`.
+5. If schema drift suspected, apply SQL updates: `./scripts/migrate.sh`.
+6. If data corruption suspected, take immediate backup: `./scripts/backup.sh`.
 
 [Go to TOC](#table-of-contents)
 

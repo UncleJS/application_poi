@@ -13,6 +13,8 @@
 - [Database Connection Errors](#database-connection-errors)
 - [Image Build Fails](#image-build-fails)
 - [Health Checks Failing](#health-checks-failing)
+- [Integration Tests Failing](#integration-tests-failing)
+- [Timer Jobs Not Running](#timer-jobs-not-running)
 
 ## Services Not Starting
 Run:
@@ -51,6 +53,37 @@ Verify Quadlet files exist in `~/.config/containers/systemd/` and run `systemctl
 - Run `./scripts/health.sh`.
 - Check API and proxy logs for upstream routing failures.
 - Validate that API serves `/health`, `/ready`, `/openapi.json`, and `/docs`.
+
+[Go to TOC](#table-of-contents)
+
+## Integration Tests Failing
+- Run with a clean output: `./scripts/test-integration.sh`.
+- Confirm admin credentials in `~/.config/poi-stack/poi.env` match test defaults.
+- If failures begin after schema changes, run `./scripts/migrate.sh` and retest.
+- Inspect latest nightly log: `~/.config/poi-stack/logs/integration_latest.log`.
+
+[Go to TOC](#table-of-contents)
+
+## Timer Jobs Not Running
+- Check timer states:
+
+```bash
+systemctl --user status poi-backup.timer
+systemctl --user status poi-integration.timer
+```
+
+- Check next triggers:
+
+```bash
+systemctl --user list-timers | grep poi-
+```
+
+- Manually trigger jobs to confirm execution:
+
+```bash
+systemctl --user start poi-backup.service
+systemctl --user start poi-integration.service
+```
 
 [Go to TOC](#table-of-contents)
 
