@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/common.sh"
 
 require_cmd podman
 require_cmd systemctl
+require_cmd python
 require_user_systemd
 
 ensure_dirs
@@ -17,10 +18,14 @@ ensure_env_file
 [[ -d "${SYSTEMD_SRC_DIR}" ]] || die "Missing systemd source directory: ${SYSTEMD_SRC_DIR}"
 
 log "Installing Quadlet units into ${USER_QUADLET_DIR}"
-cp "${QUADLET_SRC_DIR}"/*.container "${USER_QUADLET_DIR}/"
+for file in "${QUADLET_SRC_DIR}"/*.container; do
+  python -c "from pathlib import Path; import sys; src=Path(sys.argv[1]).read_text(); Path(sys.argv[2]).write_text(src.replace('__PROJECT_ROOT__', sys.argv[3]))" "${file}" "${USER_QUADLET_DIR}/$(basename "${file}")" "${PROJECT_ROOT}"
+done
 cp "${QUADLET_SRC_DIR}"/*.network "${USER_QUADLET_DIR}/"
 cp "${QUADLET_SRC_DIR}"/*.volume "${USER_QUADLET_DIR}/"
-cp "${SYSTEMD_SRC_DIR}"/*.service "${USER_SYSTEMD_DIR}/"
+for file in "${SYSTEMD_SRC_DIR}"/*.service; do
+  python -c "from pathlib import Path; import sys; src=Path(sys.argv[1]).read_text(); Path(sys.argv[2]).write_text(src.replace('__PROJECT_ROOT__', sys.argv[3]))" "${file}" "${USER_SYSTEMD_DIR}/$(basename "${file}")" "${PROJECT_ROOT}"
+done
 cp "${SYSTEMD_SRC_DIR}"/*.timer "${USER_SYSTEMD_DIR}/"
 
 log "Reloading user systemd daemon"
@@ -29,8 +34,12 @@ systemctl --user daemon-reload
 log "Enabling and starting POI services"
 for svc in "${STACK_SERVICES[@]}"; do
   systemctl --user enable "${svc}" >/dev/null 2>&1 || true
-  systemctl --user start "${svc}"
 done
+
+systemctl --user start "poi-db.service"
+wait_for_db
+"${SCRIPT_DIR}/migrate.sh"
+systemctl --user start "poi-api.service" "poi-web.service" "poi-proxy.service"
 
 log "Enabling backup timer"
 for unit in "${STACK_AUX_UNITS[@]}"; do

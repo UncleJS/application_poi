@@ -7,7 +7,7 @@ Requires=poi-api.service poi-web.service
 ContainerName=poi-proxy
 Image=localhost/poi-proxy:latest
 Network=poi.network
-EnvironmentFile=%h/.config/poi-stack/poi.env
+EnvironmentFile=__PROJECT_ROOT__/.runtime/poi.env
 PublishPort=127.0.0.1:9010:9010
 
 [Service]

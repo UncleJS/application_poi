@@ -6,7 +6,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 QUADLET_SRC_DIR="${PROJECT_ROOT}/infra/quadlet"
 USER_QUADLET_DIR="${HOME}/.config/containers/systemd"
 USER_SYSTEMD_DIR="${HOME}/.config/systemd/user"
-STACK_CONFIG_DIR="${HOME}/.config/poi-stack"
+STACK_CONFIG_DIR="${PROJECT_ROOT}/.runtime"
 STACK_ENV_FILE="${STACK_CONFIG_DIR}/poi.env"
 BACKUP_DIR="${STACK_CONFIG_DIR}/backups"
 LOG_DIR="${STACK_CONFIG_DIR}/logs"
@@ -61,6 +61,36 @@ ensure_env_file() {
 
 load_env_file() {
   [[ -f "${STACK_ENV_FILE}" ]] || die "Missing env file: ${STACK_ENV_FILE}"
-  # shellcheck disable=SC1090
-  source "${STACK_ENV_FILE}"
+
+  while IFS= read -r raw || [[ -n "${raw}" ]]; do
+    line="${raw%$'\r'}"
+    [[ -z "${line}" || "${line}" =~ ^[[:space:]]*# ]] && continue
+    [[ "${line}" == *"="* ]] || continue
+
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="$(printf '%s' "${key}" | tr -d '[:space:]')"
+
+    if [[ "${value}" =~ ^".*"$ ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "${value}" =~ ^'.*'$ ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+
+    export "${key}=${value}"
+  done < "${STACK_ENV_FILE}"
+}
+
+wait_for_db() {
+  local timeout_seconds="${1:-90}"
+  local elapsed=0
+  load_env_file
+
+until MYSQL_PWD="${DB_PASSWORD}" podman exec -e MYSQL_PWD poi-db mariadb-admin -u"${DB_USER}" ping --silent >/dev/null 2>&1; do
+    sleep 2
+    elapsed=$((elapsed + 2))
+    if (( elapsed >= timeout_seconds )); then
+      die "Timed out waiting for DB readiness"
+    fi
+  done
 }

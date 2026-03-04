@@ -27,9 +27,9 @@
 [Go to TOC](#table-of-contents)
 
 ## Required Local Paths
-- Runtime env file: `~/.config/poi-stack/poi.env`
-- Backup output directory: `~/.config/poi-stack/backups/`
-- Nightly integration logs: `~/.config/poi-stack/logs/`
+- Runtime env file: `.runtime/poi.env`
+- Backup output directory: `.runtime/backups/`
+- Nightly integration logs: `.runtime/logs/`
 - User unit install location: `~/.config/systemd/user/`
 - User Quadlet location: `~/.config/containers/systemd/`
 
@@ -37,10 +37,10 @@
 
 ## Configure Environment
 1. Create runtime config directory:
-   - `mkdir -p ~/.config/poi-stack`
+   - `mkdir -p .runtime`
 2. Copy env template:
-   - `cp .env.example ~/.config/poi-stack/poi.env`
-3. Edit required secrets and values in `~/.config/poi-stack/poi.env`.
+   - `cp .env.example .runtime/poi.env`
+3. Edit required secrets and values in `.runtime/poi.env`.
 4. Keep `ADMIN_USER` and `ADMIN_PASSWORD` set for JWT login.
 5. Set `DOCS_AUTH_ENABLED=true` to protect `/docs` and `/openapi.json` with basic auth.
 
@@ -106,7 +106,7 @@ curl -X POST http://localhost:9010/auth/login \
 [Go to TOC](#table-of-contents)
 
 ## Optional Docs Authentication
-- Enable docs protection by setting `DOCS_AUTH_ENABLED=true` in `~/.config/poi-stack/poi.env`.
+- Enable docs protection by setting `DOCS_AUTH_ENABLED=true` in `.runtime/poi.env`.
 - Keep `DOCS_AUTH_USER` and `DOCS_AUTH_PASS` populated.
 - Restart services after changing auth flags:
 

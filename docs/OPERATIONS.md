@@ -32,7 +32,7 @@
 - Web logs: `./scripts/logs.sh web`
 - DB logs: `./scripts/logs.sh db`
 - Proxy logs: `./scripts/logs.sh proxy`
-- Nightly integration run logs: `~/.config/poi-stack/logs/integration_latest.log`
+- Nightly integration run logs: `.runtime/logs/integration_latest.log`
 
 [Go to TOC](#table-of-contents)
 
@@ -83,10 +83,10 @@ Manual run and logs:
 
 ```bash
 systemctl --user start poi-integration.service
-ls ~/.config/poi-stack/logs
+ls .runtime/logs
 ```
 
-The test log file is written to `~/.config/poi-stack/logs/integration_*.log` and symlinked as `integration_latest.log`.
+The test log file is written to `.runtime/logs/integration_*.log` and symlinked as `integration_latest.log`.
 Log retention defaults to 14 files and can be overridden with `NIGHTLY_LOG_RETAIN_COUNT`.
 
 [Go to TOC](#table-of-contents)

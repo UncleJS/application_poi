@@ -8,9 +8,7 @@ source "${SCRIPT_DIR}/common.sh"
 require_cmd systemctl
 require_user_systemd
 
-for svc in "${STACK_SERVICES[@]}"; do
-  log "Restarting ${svc}"
-  systemctl --user restart "${svc}"
-done
+"${SCRIPT_DIR}/stop.sh"
+"${SCRIPT_DIR}/start.sh"
 
 "${SCRIPT_DIR}/status.sh"

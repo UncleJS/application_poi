@@ -7,6 +7,13 @@ const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const attribution = '&copy; OpenStreetMap contributors'
 const uploadLimitMb = 20
 
+const escapeHtml = (value) => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
 export default function HomePage() {
   const [pois, setPois] = useState([])
   const [selectedPoi, setSelectedPoi] = useState(null)
@@ -77,7 +84,7 @@ export default function HomePage() {
         color: poi.archived_at ? '#9ca3af' : '#0f766e',
         fillOpacity: 0.9
       })
-      marker.bindPopup(`<strong>${poi.name}</strong><br/>${poi.category}<br/>${poi.archived_at ? 'Archived' : 'Active'}`)
+      marker.bindPopup(`<strong>${escapeHtml(poi.name)}</strong><br/>${escapeHtml(poi.category)}<br/>${poi.archived_at ? 'Archived' : 'Active'}`)
       marker.on('click', () => {
         setSelectedPoi(poi)
         fetchPoiDetail(poi.id)

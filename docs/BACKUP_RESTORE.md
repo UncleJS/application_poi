@@ -18,7 +18,7 @@
 
 ## Backup Strategy
 - Backups are SQL dump files created from the running MariaDB container.
-- Backup output path: `~/.config/poi-stack/backups/`.
+- Backup output path: `.runtime/backups/`.
 - File naming uses UTC timestamp format: `poi_YYYYMMDDTHHMMSSZ.sql`.
 
 [Go to TOC](#table-of-contents)
@@ -37,7 +37,7 @@ Run:
 ./scripts/backup.sh
 ```
 
-The command reads credentials from `~/.config/poi-stack/poi.env` and writes a dump to the backup directory.
+The command reads credentials from `.runtime/poi.env` and writes a dump to the backup directory.
 
 [Go to TOC](#table-of-contents)
 

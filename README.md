@@ -41,7 +41,7 @@ This project provides an OpenStreetMap-based Point of Interest platform with des
 
 ## Quick Start
 1. Copy and edit env values:
-   - `cp .env.example ~/.config/poi-stack/poi.env`
+   - `cp .env.example .runtime/poi.env`
 2. Build local images:
    - `./scripts/build.sh`
 3. Install and start services:

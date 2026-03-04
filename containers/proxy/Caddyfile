@@ -1,4 +1,14 @@
 :9010 {
+  header {
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  request_body /api/* {
+    max_size 21MB
+  }
+
   @api path /health /ready /openapi.json /docs /docs/* /auth/* /api/*
   reverse_proxy @api poi-api:3001
 

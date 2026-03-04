@@ -48,7 +48,7 @@ This document describes every `*.sh` script in the project, including when to ru
 
 ## Bootstrap and Shared Utilities
 ### `scripts/common.sh`
-- Defines standard paths (`~/.config/poi-stack`, user systemd and Quadlet directories).
+- Defines standard paths (`.runtime`, plus user systemd and Quadlet directories).
 - Provides helper functions: `log`, `warn`, `die`, `require_cmd`, `ensure_dirs`, `load_env_file`.
 - Declares managed unit arrays: stack services and auxiliary timer/service units.
 
@@ -104,7 +104,7 @@ This document describes every `*.sh` script in the project, including when to ru
 
 ## Data and Validation Scripts
 ### `scripts/env-check.sh`
-- Loads `~/.config/poi-stack/poi.env` and validates required keys.
+- Loads `.runtime/poi.env` and validates required keys.
 - Prints `[OK]`/`[MISSING]` per variable.
 - Exits non-zero when mandatory settings are missing.
 
@@ -114,7 +114,7 @@ This document describes every `*.sh` script in the project, including when to ru
 
 ### `scripts/backup.sh`
 - Runs `mariadb-dump` in `poi-db` container.
-- Writes UTC timestamped dumps to `~/.config/poi-stack/backups/`.
+- Writes UTC timestamped dumps to `.runtime/backups/`.
 
 ### `scripts/restore.sh`
 - Restores an SQL dump into configured database.
@@ -140,14 +140,14 @@ This document describes every `*.sh` script in the project, including when to ru
 
 ### `scripts/test-nightly.sh`
 - Wrapper used by nightly systemd service/timer.
-- Writes test output to `~/.config/poi-stack/logs/integration_<timestamp>.log`.
+- Writes test output to `.runtime/logs/integration_<timestamp>.log`.
 - Updates symlink `integration_latest.log`.
 - Retains most recent N logs with `NIGHTLY_LOG_RETAIN_COUNT` (default `14`).
 
 [Go to TOC](#table-of-contents)
 
 ## Environment Variables Used by Scripts
-- Core paths and settings: `STACK_ENV_FILE` (resolved from `~/.config/poi-stack/poi.env`).
+- Core paths and settings: `STACK_ENV_FILE` (resolved from `.runtime/poi.env`).
 - DB settings: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
 - MariaDB bootstrap vars: `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD`, `MARIADB_ROOT_PASSWORD`.
 - Auth: `ADMIN_USER`, `ADMIN_PASSWORD`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`.
@@ -159,7 +159,7 @@ This document describes every `*.sh` script in the project, including when to ru
 [Go to TOC](#table-of-contents)
 
 ## Recommended Operator Workflow
-1. Configure env: `cp .env.example ~/.config/poi-stack/poi.env`.
+1. Configure env: `cp .env.example .runtime/poi.env`.
 2. Validate env: `./scripts/env-check.sh`.
 3. Build images: `./scripts/build.sh`.
 4. Install/start stack: `./scripts/install.sh`.

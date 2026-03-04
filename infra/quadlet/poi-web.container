@@ -7,7 +7,7 @@ Requires=poi-api.service
 ContainerName=poi-web
 Image=localhost/poi-web:latest
 Network=poi.network
-EnvironmentFile=%h/.config/poi-stack/poi.env
+EnvironmentFile=__PROJECT_ROOT__/.runtime/poi.env
 PublishPort=127.0.0.1:3000:3000
 
 [Service]

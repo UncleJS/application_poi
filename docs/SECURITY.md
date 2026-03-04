@@ -40,7 +40,7 @@
 [Go to TOC](#table-of-contents)
 
 ## Secrets Handling
-- Store env values in `~/.config/poi-stack/poi.env`.
+- Store env values in `.runtime/poi.env`.
 - Do not commit secrets to source control.
 - Rotate JWT and DB secrets periodically.
 

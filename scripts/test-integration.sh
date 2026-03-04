@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "$0")" && pwd)/common.sh"
+load_env_file
+
 BASE_URL="${BASE_URL:-http://localhost:9010}"
 ADMIN_USER="${ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-change_me_admin_password}"
+
+if [[ "${ADMIN_PASSWORD}" == "change_me_admin_password" ]]; then
+  echo "[FAIL] ADMIN_PASSWORD is still set to insecure default placeholder"
+  exit 1
+fi
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "${tmp_dir}"' EXIT

@@ -37,7 +37,7 @@ Verify Quadlet files exist in `~/.config/containers/systemd/` and run `systemctl
 
 ## Database Connection Errors
 - Confirm DB service state and logs.
-- Validate credentials in `~/.config/poi-stack/poi.env`.
+- Validate credentials in `.runtime/poi.env`.
 - Run `./scripts/env-check.sh` and fix any missing keys.
 
 [Go to TOC](#table-of-contents)
@@ -58,9 +58,9 @@ Verify Quadlet files exist in `~/.config/containers/systemd/` and run `systemctl
 
 ## Integration Tests Failing
 - Run with a clean output: `./scripts/test-integration.sh`.
-- Confirm admin credentials in `~/.config/poi-stack/poi.env` match test defaults.
+- Confirm admin credentials in `.runtime/poi.env` match test defaults.
 - If failures begin after schema changes, run `./scripts/migrate.sh` and retest.
-- Inspect latest nightly log: `~/.config/poi-stack/logs/integration_latest.log`.
+- Inspect latest nightly log: `.runtime/logs/integration_latest.log`.
 
 [Go to TOC](#table-of-contents)
 

@@ -3,5 +3,5 @@ Description=POI stack MariaDB backup job
 
 [Service]
 Type=oneshot
-WorkingDirectory=%h/0_opencode/application_poi
-ExecStart=%h/0_opencode/application_poi/scripts/backup.sh
+WorkingDirectory=__PROJECT_ROOT__
+ExecStart=__PROJECT_ROOT__/scripts/backup.sh
