@@ -614,17 +614,17 @@ export default function HomePage() {
           {!auth.accessToken ? <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-sm text-zinc-300">Showing public POIs only. Login to create, edit, and view private items.</div> : null}
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-          <div>
+        <div className="grid gap-4 lg:grid-cols-[2fr_1fr] lg:items-start">
+          <div className="flex flex-col gap-4">
             <div className="overflow-hidden rounded-xl border border-zinc-800">
               <div id="map" style={{ height: mapHeight }} className="w-full bg-zinc-900" />
               <button type="button" onMouseDown={handleDragStart} className="block h-3 w-full cursor-ns-resize bg-zinc-800 text-[10px] text-zinc-400 transition hover:bg-zinc-700">
                 Drag to resize
               </button>
             </div>
-            <p className="mt-2 text-xs text-zinc-400">Total: {stats.total} | Archived in result set: {stats.archived}</p>
+            <p className="text-xs text-zinc-400">Total: {stats.total} | Archived in result set: {stats.archived}</p>
 
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name/description" className={`${inputClass} sm:flex-1`} />
               <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputClass} sm:w-44`}>
                 <option value="">All categories</option>
@@ -653,9 +653,9 @@ export default function HomePage() {
               ) : null}
             </div>
 
-            <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
               <h2 className="mb-2 text-lg font-medium">POI List</h2>
-              <div className="grid max-h-64 gap-2 overflow-auto">
+              <div className="grid min-h-48 gap-2 overflow-auto">
                 {pois.map((poi) => (
                   <button
                     key={poi.id}
