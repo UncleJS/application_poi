@@ -1,0 +1,189 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "POI API",
+    "version": "1.0.0",
+    "description": "OpenStreetMap POI API with JWT auth, archive/restore lifecycle, and MariaDB photo storage"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:9010"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Readiness check",
+        "responses": { "200": { "description": "Ready" } }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login and get tokens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Token pair" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh token pair",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Refreshed" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/api/pois": {
+      "get": {
+        "summary": "List/search POIs",
+        "parameters": [
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "minLat", "in": "query", "schema": { "type": "number" } },
+          { "name": "maxLat", "in": "query", "schema": { "type": "number" } },
+          { "name": "minLng", "in": "query", "schema": { "type": "number" } },
+          { "name": "maxLng", "in": "query", "schema": { "type": "number" } },
+          { "name": "lat", "in": "query", "schema": { "type": "number" } },
+          { "name": "lng", "in": "query", "schema": { "type": "number" } },
+          { "name": "radiusKm", "in": "query", "schema": { "type": "number" } },
+          { "name": "includeArchived", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "POI list" } }
+      },
+      "post": {
+        "summary": "Create POI",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "description", "category", "lat", "lng"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "category": { "type": "string" },
+                  "lat": { "type": "number" },
+                  "lng": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/api/pois/{id}": {
+      "get": {
+        "summary": "Get POI details with photos",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "POI detail" }, "404": { "description": "Not found" } }
+      },
+      "patch": {
+        "summary": "Update POI",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Updated" }, "401": { "description": "Unauthorized" } }
+      },
+      "delete": {
+        "summary": "Archive POI",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Archived" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/api/pois/{id}/restore": {
+      "post": {
+        "summary": "Restore archived POI",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Restored" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/api/pois/{id}/photos": {
+      "post": {
+        "summary": "Upload POI photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["photo"],
+                "properties": {
+                  "photo": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Photo uploaded" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/api/photos/{id}": {
+      "get": {
+        "summary": "Get photo binary",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Image" }, "404": { "description": "Not found" } }
+      },
+      "delete": {
+        "summary": "Archive photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Archived" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/api/photos/{id}/restore": {
+      "post": {
+        "summary": "Restore archived photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Restored" }, "401": { "description": "Unauthorized" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

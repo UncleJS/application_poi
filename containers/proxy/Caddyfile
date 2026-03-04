@@ -1,0 +1,6 @@
+:9010 {
+  @api path /health /ready /openapi.json /docs /docs/* /auth/* /api/*
+  reverse_proxy @api poi-api:3001
+
+  reverse_proxy poi-web:3000
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run POI backup every day
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+Persistent=true
+Unit=poi-backup.service
+
+[Install]
+WantedBy=timers.target

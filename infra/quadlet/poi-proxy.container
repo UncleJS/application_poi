@@ -1,0 +1,18 @@
+[Unit]
+Description=POI reverse proxy
+After=poi-api.service poi-web.service
+Requires=poi-api.service poi-web.service
+
+[Container]
+ContainerName=poi-proxy
+Image=localhost/poi-proxy:latest
+Network=poi.network
+EnvironmentFile=%h/.config/poi-stack/poi.env
+PublishPort=127.0.0.1:9010:9010
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

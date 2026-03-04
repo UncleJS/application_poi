@@ -1,0 +1,14 @@
+{
+  "name": "poi-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "elysia": "^1.1.21",
+    "jose": "^5.9.6",
+    "mariadb": "^3.4.2"
+  }
+}

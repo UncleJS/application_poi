@@ -1,0 +1,18 @@
+[Unit]
+Description=POI MariaDB service
+After=network-online.target
+
+[Container]
+ContainerName=poi-db
+Image=docker.io/library/mariadb:11
+Network=poi.network
+Volume=poi-db-data:/var/lib/mysql:Z
+EnvironmentFile=%h/.config/poi-stack/poi.env
+PublishPort=127.0.0.1:3307:3306
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target
