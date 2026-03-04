@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+
+:root {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 96%;
+  --card: 240 6% 10%;
+  --card-foreground: 0 0% 96%;
+  --border: 240 5% 19%;
+  --input: 240 5% 19%;
+  --primary: 173 80% 40%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 65%;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.leaflet-popup-content-wrapper {
+  background: #18181b;
+  color: #f4f4f5;
+  border: 1px solid #27272a;
+}
+
+.leaflet-popup-tip {
+  background: #18181b;
+}
+
+.leaflet-control-zoom a {
+  background: #18181b;
+  color: #f4f4f5;
+  border-color: #27272a;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #27272a;
+}
+
+.leaflet-control-attribution {
+  background: rgba(9, 9, 11, 0.82) !important;
+  color: #a1a1aa !important;
+}
+
+.leaflet-control-attribution a {
+  color: #d4d4d8 !important;
+}
