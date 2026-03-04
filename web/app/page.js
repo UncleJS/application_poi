@@ -157,6 +157,21 @@ export default function HomePage() {
     }
   }
 
+  const centerMapOnPoi = (poi, preferredZoom = 15) => {
+    if (!window.__poiMap) return
+    const lat = Number(poi.lat)
+    const lng = Number(poi.lng)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return
+    const zoom = Math.max(window.__poiMap.getZoom(), preferredZoom)
+    window.__poiMap.setView([lat, lng], zoom)
+  }
+
+  const selectPoi = async (poi) => {
+    setSelectedPoi(poi)
+    centerMapOnPoi(poi)
+    await fetchPoiDetail(poi.id)
+  }
+
   const initMap = (items) => {
     if (!window.L) return
     const root = document.getElementById('map')
@@ -206,10 +221,15 @@ export default function HomePage() {
         fillOpacity: 0.9
       })
       marker.bindPopup(`<strong>${escapeHtml(poi.name)}</strong><br/>${escapeHtml(poi.category)}<br/>owner: ${escapeHtml(poi.owner_username || '')}`)
+      marker.bindTooltip(escapeHtml(poi.name), {
+        permanent: true,
+        direction: 'right',
+        offset: [10, 0],
+        className: 'poi-marker-label'
+      })
       marker.on('click', (event) => {
         window.L.DomEvent.stopPropagation(event)
-        setSelectedPoi(poi)
-        fetchPoiDetail(poi.id)
+        void selectPoi(poi)
       })
       layer.addLayer(marker)
       bounds.push([lat, lng])
@@ -235,10 +255,12 @@ export default function HomePage() {
       window.__pendingMarker.addTo(window.__poiMap)
     }
 
-    if (bounds.length > 0) {
+    if (pendingLatLng) {
+      const currentZoom = window.__poiMap.getZoom()
+      window.__poiMap.setView([Number(pendingLatLng.lat), Number(pendingLatLng.lng)], Math.max(currentZoom, 14))
+    } else if (bounds.length > 0 && !window.__poiHasAutoFit) {
       window.__poiMap.fitBounds(bounds, { padding: [30, 30] })
-    } else if (pendingLatLng) {
-      window.__poiMap.setView([Number(pendingLatLng.lat), Number(pendingLatLng.lng)], 13)
+      window.__poiHasAutoFit = true
     }
   }
 
@@ -257,6 +279,9 @@ export default function HomePage() {
       if (categoryFilter.trim()) params.set('category', categoryFilter.trim())
       params.set('scope', scopeFilter)
       const data = await request(`/api/pois?${params.toString()}`, { headers: authHeader })
+      if (typeof window !== 'undefined') {
+        window.__poiHasAutoFit = false
+      }
       setPois(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(String(err.message || err))
@@ -610,7 +635,7 @@ export default function HomePage() {
                   <button
                     key={poi.id}
                     type="button"
-                    onClick={() => fetchPoiDetail(poi.id)}
+                    onClick={() => void selectPoi(poi)}
                     className="rounded-lg border border-zinc-800 bg-zinc-950 p-2 text-left text-sm hover:border-teal-600"
                   >
                     <div className="font-semibold">{poi.name}</div>

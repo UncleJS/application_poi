@@ -46,3 +46,13 @@ body {
 .leaflet-control-attribution a {
   color: #d4d4d8 !important;
 }
+
+.poi-marker-label {
+  background: rgba(9, 9, 11, 0.9);
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  color: #f4f4f5;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+}
