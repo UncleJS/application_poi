@@ -2,6 +2,7 @@
 Description=Run POI integration tests nightly
 
 [Timer]
+OnBootSec=50
 OnCalendar=*-*-* 02:45:00
 Persistent=true
 Unit=poi-integration.service

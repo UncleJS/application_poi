@@ -2,6 +2,7 @@
 Description=Run POI backup every day
 
 [Timer]
+OnBootSec=50
 OnCalendar=*-*-* 02:15:00
 Persistent=true
 Unit=poi-backup.service

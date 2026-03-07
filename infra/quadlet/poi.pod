@@ -6,5 +6,8 @@ After=network-online.target
 PodName=poi
 PublishPort=127.0.0.1:9010:9010
 
+[Service]
+ExecStartPre=/bin/sleep 50
+
 [Install]
 WantedBy=default.target
