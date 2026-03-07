@@ -52,6 +52,7 @@ done
 systemctl --user start "poi-db.service"
 wait_for_db
 "${SCRIPT_DIR}/migrate.sh"
+"${SCRIPT_DIR}/build.sh"
 systemctl --user start "poi-api.service" "poi-web.service" "poi-proxy.service" "poi-phpmyadmin.service"
 
 log "Enabling backup timer"
