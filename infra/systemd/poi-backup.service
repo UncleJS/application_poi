@@ -1,5 +1,7 @@
 [Unit]
 Description=POI stack MariaDB backup job
+Requires=poi-db.service
+After=poi-db.service
 
 [Service]
 Type=oneshot
