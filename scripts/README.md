@@ -1,9 +1,41 @@
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![Containers: Podman](https://img.shields.io/badge/Containers-Podman-892CA0?logo=podman&logoColor=white)](https://podman.io/)
+[![Runtime: Bun](https://img.shields.io/badge/Runtime-Bun-000000?logo=bun&logoColor=white)](https://bun.sh/)
+[![Database: MariaDB](https://img.shields.io/badge/Database-MariaDB-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![API: OpenAPI](https://img.shields.io/badge/API-OpenAPI-6BA539?logo=swagger&logoColor=white)](https://www.openapis.org/)
+[![Local Port: 9010](https://img.shields.io/badge/Local%20Port-9010-blue)](#)
+
 # scripts/
 
 Shell automation for the full POI stack lifecycle — install, build, operate, test, backup, and clean up.
 
 All scripts source `common.sh` for shared paths, the service list, and helper functions.
 Run every script from the **project root** (`./scripts/<name>.sh`), not from inside this directory.
+
+---
+
+## Table of Contents
+
+- [Quick reference](#quick-reference)
+- [common.sh](#commonsh)
+- [install.sh](#installsh)
+- [build.sh](#buildsh)
+- [rebuild.sh](#rebuildsh)
+- [start.sh](#startsh)
+- [stop.sh](#stopsh)
+- [restart.sh](#restartsh)
+- [status.sh](#statussh)
+- [logs.sh](#logssh)
+- [health.sh](#healthsh)
+- [migrate.sh](#migratesh)
+- [env-check.sh](#env-checksh)
+- [backup.sh](#backupsh)
+- [restore.sh](#restoresh)
+- [uninstall.sh](#uninstallsh)
+- [reset-dev.sh](#reset-devsh)
+- [phpmyadmin.sh](#phpmyadminsh)
+- [test-integration.sh](#test-integrationsh)
+- [test-nightly.sh](#test-nightlysh)
 
 ---
 
@@ -31,6 +63,8 @@ Run every script from the **project root** (`./scripts/<name>.sh`), not from ins
 | [`test-integration.sh`](#test-integrationsh) | End-to-end API integration test against the live stack | Yes |
 | [`test-nightly.sh`](#test-nightlysh) | Nightly wrapper: runs integration tests and retains logs | Yes |
 
+[Go to TOC](#table-of-contents)
+
 ---
 
 ## common.sh
@@ -45,7 +79,7 @@ Defines every shared constant and helper used across the automation layer:
 
 `load_env_file` parses `.runtime/poi.env` and exports every key, stripping optional quote wrapping. `wait_for_db` polls the `poi-db` container until MariaDB accepts connections (default 90 s timeout).
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -68,7 +102,7 @@ First-time setup on a new machine or after moving the project to a new path.
 
 Safe to re-run — unit files are overwritten and migrations are idempotent.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -90,7 +124,7 @@ The project root is used as the build context so both `api/` and `web/` source t
 
 Run this after any code change in `api/`, `web/`, or `containers/` before restarting services. For a combined stop → build → start cycle, use `rebuild.sh` instead.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -106,7 +140,7 @@ Calls, in order: `stop.sh` → `build.sh` → `start.sh` → `status.sh`.
 
 Use after any change that requires a new image (API code, frontend code, Containerfile, Caddyfile). For config-only changes (env file edits without image changes) `restart.sh` is faster.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -125,7 +159,7 @@ Starts all stack services in the correct dependency order:
 
 Also called internally by `rebuild.sh` and `restart.sh`.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -139,7 +173,7 @@ Stops all services in `STACK_SERVICES` (db, api, web, proxy, phpmyadmin). Errors
 
 Does **not** disable services or remove unit files — use `uninstall.sh` for that. Does **not** stop backup or integration timers, which should persist across restarts.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -153,7 +187,7 @@ Calls `stop.sh` then `start.sh`, then prints status. Use when a config or env ch
 
 For changes that require new images, use `rebuild.sh` instead.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -182,7 +216,7 @@ poi-backup.timer     active
 ...
 ```
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -204,7 +238,7 @@ Tails the journald log stream for the named service using `journalctl --user -f`
 
 Defaults to `proxy` if no target is given. Press `Ctrl-C` to stop tailing.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -228,7 +262,7 @@ Sends HTTP requests to the four canonical stack endpoints and prints `[OK]` or `
 
 Exits non-zero on the first failure. Safe to use as a post-deploy gate in CI or in scripts.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -247,7 +281,7 @@ Applies pending SQL migration files from `db/migrations/` to the running `poi-db
 
 Idempotent — safe to run on every `start.sh` and `install.sh`. Run manually after dropping a new `.sql` file into `db/migrations/`.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -263,7 +297,7 @@ Called automatically by `install.sh`. Run manually after editing the env file to
 
 Required variables checked: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `MARIADB_*`, `JWT_*`, `ADMIN_USER`, `ADMIN_PASSWORD`, `CORS_ORIGIN`, `UPLOAD_MAX_BYTES`, `PHOTO_MAX_PER_POI`, `OSM_TILE_URL`, `OSM_ATTRIBUTION`, `DOCS_AUTH_*`, `NIGHTLY_LOG_RETAIN_COUNT`, `BACKUP_RETAIN_COUNT`.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -285,7 +319,7 @@ Restore a dump with:
 ./scripts/restore.sh .runtime/backups/<file>.sql
 ```
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -309,7 +343,7 @@ Always take a fresh backup before restoring:
 ./scripts/restore.sh .runtime/backups/<latest>.sql
 ```
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -332,7 +366,7 @@ Cleanly removes the POI stack from the system:
 
 Without `--purge-data`, the `poi-db-data` Podman volume is preserved so data survives a reinstall. With `--purge-data`, the volume is deleted — **this is irreversible**.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -348,7 +382,7 @@ Stops all services, removes the `poi-db-data` Podman volume, and starts the stac
 
 Use when you want a clean database for testing migrations, seeding fixture data, or reproducing a first-install scenario.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -367,7 +401,7 @@ http://localhost:9010/phpmyadmin/
 
 Log in with the MariaDB credentials from `.runtime/poi.env` (`DB_USER` / `DB_PASSWORD`).
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -399,7 +433,7 @@ Requires the full stack to be running. Reads `ADMIN_USER` and `ADMIN_PASSWORD` f
 
 Also invoked automatically by `test-nightly.sh`.
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
 
 ---
 
@@ -422,4 +456,8 @@ systemctl --user start poi-integration.service
 cat .runtime/logs/integration_latest.log
 ```
 
-[Go to quick reference](#quick-reference)
+[Go to TOC](#table-of-contents)
+
+---
+
+© 2026 UncleJS - Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0).
