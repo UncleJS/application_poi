@@ -217,18 +217,22 @@ This runs stop → build → start → status in sequence.  For a config-only ch
 
 ## Uninstall
 
-Standard uninstall (keeps DB data):
+Full destructive uninstall (keeps the repo checkout only):
 
 ```bash
 ./scripts/uninstall.sh
 ```
 
-Uninstall and permanently delete the DB volume:
+Compatibility alias (same destructive result):
 
 ```bash
-./scripts/backup.sh                          # backup first!
 ./scripts/uninstall.sh --purge-data
 ```
+
+This removes POI user units, the `poi` pod, leftover POI containers,
+`localhost/poi-*` images, the `poi-db-data` volume, and repo-local generated
+artifacts such as `.runtime/` and `web/.next/`.  The repository checkout stays
+on disk.
 
 [Go to TOC](#table-of-contents)
 

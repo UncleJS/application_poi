@@ -57,7 +57,7 @@ Run every script from the **project root** (`./scripts/<name>.sh`), not from ins
 | [`env-check.sh`](#env-checksh) | Validate all required env vars are present | Yes |
 | [`backup.sh`](#backupsh) | Create a timestamped MariaDB SQL dump | Yes |
 | [`restore.sh`](#restoresh) | Restore a SQL dump — **destructive** | With care |
-| [`uninstall.sh`](#uninstallsh) | Remove systemd units; optionally purge DB volume | With care |
+| [`uninstall.sh`](#uninstallsh) | Fully remove POI runtime state, local images, data, and generated artifacts while keeping the repo checkout | Destructive |
 | [`reset-dev.sh`](#reset-devsh) | Wipe DB volume and restart clean — **dev only** | Dev only |
 | [`phpmyadmin.sh`](#phpmyadminsh) | Start the phpMyAdmin service manually | Yes |
 | [`test-integration.sh`](#test-integrationsh) | End-to-end API integration test against the live stack | Yes |
@@ -350,21 +350,23 @@ Always take a fresh backup before restoring:
 ## uninstall.sh
 
 ```bash
-# Remove units, keep database volume:
+# Fully remove POI machine state while keeping the repository checkout:
 ./scripts/uninstall.sh
 
-# Remove units AND delete all database data:
+# Compatibility alias (same destructive result):
 ./scripts/uninstall.sh --purge-data
 ```
 
-Cleanly removes the POI stack from the system:
+Destructively removes POI-managed local state while keeping the repository files:
 
-1. Stops and disables all stack services and timers.
-2. Removes Quadlet unit files (`.container`, `.pod`, `.volume`) from `~/.config/containers/systemd/`.
-3. Removes timer/service files from `~/.config/systemd/user/`.
-4. Reloads the systemd daemon.
+1. Stops, disables, and unmasks all POI user services, timers, and the pod unit.
+2. Removes installed Quadlet files from `~/.config/containers/systemd/` and POI override files from `~/.config/systemd/user/`.
+3. Force-removes the `poi` pod and any leftover POI containers.
+4. Removes local `localhost/poi-*` images and the `poi-db-data` volume.
+5. Deletes repo-local generated artifacts such as `.runtime/`, `web/.next/`, `.quadlet/`, `node_modules/`, `dist/`, and `build/` directories.
+6. Reloads the systemd daemon and resets failed unit state.
 
-Without `--purge-data`, the `poi-db-data` Podman volume is preserved so data survives a reinstall. With `--purge-data`, the volume is deleted — **this is irreversible**.
+This operation is **irreversible** for local POI runtime data. The Git checkout remains on disk.
 
 [Go to TOC](#table-of-contents)
 

@@ -30,7 +30,7 @@ All scripts use `set -euo pipefail` and source `common.sh` for shared paths, ser
 |---|---|---|
 | `scripts/common.sh` | Single source of truth for paths, service lists, and helper functions shared by all other scripts | Sourced automatically — never run directly |
 | `scripts/install.sh` | Handles first-time unit installation, daemon reload, migrations, and timer activation in one command | `./scripts/install.sh` |
-| `scripts/uninstall.sh` | Cleanly removes all unit files and optionally purges the DB volume without leaving orphan systemd units | `./scripts/uninstall.sh` |
+| `scripts/uninstall.sh` | Fully removes POI user units, runtime objects, local images, data, and generated artifacts while keeping the repo checkout | `./scripts/uninstall.sh` |
 | `scripts/build.sh` | Builds the locally-tagged Podman images that Quadlet units reference | `./scripts/build.sh` |
 | `scripts/rebuild.sh` | Combines stop → build → start → status for the common "I changed code, redeploy everything" workflow | `./scripts/rebuild.sh` |
 | `scripts/start.sh` | Starts services in safe dependency order (DB → wait → migrate → app tier) | `./scripts/start.sh` |
@@ -72,12 +72,14 @@ All scripts use `set -euo pipefail` and source `common.sh` for shared paths, ser
 - Enables and starts `poi-backup.timer` and `poi-integration.timer`.
 
 ### `scripts/uninstall.sh`
-**Why it exists:** Leaving orphan unit files in `~/.config/containers/systemd/` causes systemd daemon-reload warnings and can prevent future installs from working cleanly.
+**Why it exists:** Uninstall should leave the machine free of POI-managed runtime state, not merely remove a subset of unit files.
 
-- Stops and disables all stack services and auxiliary units.
-- Removes all installed unit files from the user Quadlet and systemd directories.
-- With `--purge-data`: also removes the `poi-db-data` volume (irreversible — back up first).
-- Without `--purge-data`: keeps the DB volume intact so data survives a reinstall.
+- Stops, disables, and unmasks all POI services, timers, and the pod unit.
+- Removes installed POI Quadlet files and user-systemd override files.
+- Force-removes the `poi` pod plus any leftover POI containers.
+- Deletes local `localhost/poi-*` images and the `poi-db-data` volume.
+- Deletes generated repo-local artifacts such as `.runtime/`, `web/.next/`, `.quadlet/`, and any `node_modules/`, `dist/`, or `build/` directories.
+- Keeps the repository checkout itself on disk.
 
 [Go to TOC](#table-of-contents)
 
