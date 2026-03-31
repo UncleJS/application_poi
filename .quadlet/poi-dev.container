@@ -1,0 +1,15 @@
+[Unit]
+Description=POI development container
+
+[Container]
+ContainerName=poi-dev
+Image=localhost/poi-dev:latest
+Exec=sleep infinity
+WorkingDir=/workspace/web
+Environment=NEXT_TELEMETRY_DISABLED=1
+
+[Service]
+Restart=no
+
+[Install]
+WantedBy=default.target

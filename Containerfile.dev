@@ -1,0 +1,26 @@
+FROM registry.access.redhat.com/ubi10/ubi-minimal:latest
+
+ENV BUN_INSTALL=/opt/bun
+ENV PATH=/opt/bun/bin:${PATH}
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN microdnf install -y \
+    curl \
+    git \
+    gzip \
+    tar \
+    unzip \
+    which \
+    nodejs \
+    npm \
+  && microdnf clean all
+
+RUN curl -fsSL https://bun.sh/install | bash
+
+WORKDIR /workspace
+COPY . /workspace
+
+WORKDIR /workspace/web
+RUN bun install
+
+CMD ["sleep", "infinity"]

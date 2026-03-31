@@ -2,9 +2,18 @@ import type { Config } from 'tailwindcss'
 
 const config: Config = {
   darkMode: 'class',
-  content: ['./app/**/*.{js,jsx,ts,tsx}'],
+  content: [
+    './app/**/*.{js,jsx,ts,tsx}',
+    './components/**/*.{js,jsx,ts,tsx}',
+    './lib/**/*.{js,jsx,ts,tsx}'
+  ],
   theme: {
     extend: {
+      borderRadius: {
+        lg: '0.75rem',
+        md: '0.625rem',
+        sm: '0.5rem'
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -15,7 +24,10 @@ const config: Config = {
         primary: 'hsl(var(--primary))',
         'primary-foreground': 'hsl(var(--primary-foreground))',
         muted: 'hsl(var(--muted))',
-        'muted-foreground': 'hsl(var(--muted-foreground))'
+        'muted-foreground': 'hsl(var(--muted-foreground))',
+        accent: 'hsl(var(--accent))',
+        destructive: 'hsl(var(--destructive))',
+        ring: 'hsl(var(--ring))'
       }
     }
   }
