@@ -36,11 +36,11 @@ fi
 container_name="poi-db"
 
 log "Creating backup ${outfile}"
-MYSQL_PWD="${DB_PASSWORD}" podman exec -e MYSQL_PWD "${container_name}" mariadb-dump \
+MYSQL_PWD="${MARIADB_PASSWORD}" podman exec -e MYSQL_PWD "${container_name}" mariadb-dump \
   --single-transaction \
   --quick \
   --lock-tables=false \
-  -u"${DB_USER}" "${DB_NAME}" > "${outfile}"
+  -u"${MARIADB_USER}" "${MARIADB_DATABASE}" > "${outfile}"
 
 mapfile -t old_backups < <(ls -1t "${BACKUP_DIR}"/poi_*.sql 2>/dev/null || true)
 if (( ${#old_backups[@]} > retain_count )); then

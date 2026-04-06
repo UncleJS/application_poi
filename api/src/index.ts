@@ -20,9 +20,9 @@ const requiredEnv = (key: string) => {
 const env = {
   dbHost: process.env.DB_HOST ?? 'poi-db',
   dbPort: Number(process.env.DB_PORT ?? 3306),
-  dbName: process.env.DB_NAME ?? 'poi',
-  dbUser: process.env.DB_USER ?? 'poi_app',
-  dbPassword: requiredEnv('DB_PASSWORD'),
+  dbName: process.env.MARIADB_DATABASE ?? 'poi',
+  dbUser: process.env.MARIADB_USER ?? 'poi_app',
+  dbPassword: requiredEnv('MARIADB_PASSWORD'),
   jwtAccessSecret: requiredEnv('JWT_ACCESS_SECRET'),
   jwtRefreshSecret: requiredEnv('JWT_REFRESH_SECRET'),
   jwtIssuer: process.env.JWT_ISSUER ?? 'poi-local',

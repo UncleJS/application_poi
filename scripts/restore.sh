@@ -26,7 +26,7 @@ dump_file="${1:-}"
 
 load_env_file
 
-warn "Restore will overwrite current DB state inside ${DB_NAME}."
+warn "Restore will overwrite current DB state inside ${MARIADB_DATABASE}."
 warn "Continue only if this is intentional."
 
 container_name="poi-db"
@@ -34,8 +34,8 @@ container_name="poi-db"
 log "Stopping API/web/proxy before restore"
 systemctl --user stop "poi-api.service" "poi-web.service" "poi-proxy.service" >/dev/null 2>&1 || true
 
-log "Restoring ${dump_file} into ${DB_NAME}"
-MYSQL_PWD="${DB_PASSWORD}" podman exec -i -e MYSQL_PWD "${container_name}" mariadb -u"${DB_USER}" "${DB_NAME}" < "${dump_file}"
+log "Restoring ${dump_file} into ${MARIADB_DATABASE}"
+MYSQL_PWD="${MARIADB_PASSWORD}" podman exec -i -e MYSQL_PWD "${container_name}" mariadb -u"${MARIADB_USER}" "${MARIADB_DATABASE}" < "${dump_file}"
 
 log "Starting API/web/proxy after restore"
 systemctl --user start "poi-api.service" "poi-web.service" "poi-proxy.service"

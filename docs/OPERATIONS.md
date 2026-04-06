@@ -91,7 +91,7 @@ phpMyAdmin is accessible at:
 http://localhost:9010/phpmyadmin/
 ```
 
-- Log in with the `DB_USER` / `DB_PASSWORD` values from `.runtime/poi.env`.
+- Log in with the `MARIADB_USER` / `MARIADB_PASSWORD` values from `.runtime/poi.env`.
 - The service starts automatically with the stack via `start.sh`.
 - If it was stopped manually, restart it with:
 

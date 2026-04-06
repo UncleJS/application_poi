@@ -145,7 +145,7 @@ source scripts/common.sh && wait_for_db 30
 ## phpMyAdmin Login Fails
 
 - Confirm the service is running: `systemctl --user is-active poi-phpmyadmin.service`.
-- Use the MariaDB user credentials (`DB_USER` / `DB_PASSWORD` from `.runtime/poi.env`), not the root password.
+- Use the MariaDB user credentials (`MARIADB_USER` / `MARIADB_PASSWORD` from `.runtime/poi.env`), not the root password.
 - The Caddyfile must use `handle /phpmyadmin*` (not `handle_path`) and proxy to `127.0.0.1:80`.
 - `X-Frame-Options` must be cleared in the phpMyAdmin `handle` block or the login page will be blocked.
 - A patched `containers/phpmyadmin/Header.php` is volume-mounted to fix a PHP bug in phpMyAdmin 5.2.3 where `rootPath` returns `true` instead of the path string, breaking cookie path and login.  Ensure the volume mount is present in the container unit.

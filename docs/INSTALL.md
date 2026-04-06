@@ -67,6 +67,9 @@ real project path during install.
 
 ## Configure Environment
 
+> **This step is mandatory.** `install.sh` will refuse to start if `.runtime/poi.env`
+> is missing or still contains any `change_me_*` placeholder value.
+
 1. Create the runtime directory and copy the template:
 
 ```bash
@@ -74,18 +77,44 @@ mkdir -p .runtime
 cp .env.example .runtime/poi.env
 ```
 
-2. Edit `.runtime/poi.env` and set all secrets:
-   - `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `MARIADB_PASSWORD`, `MARIADB_ROOT_PASSWORD`
-   - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
-   - `ADMIN_USER`, `ADMIN_PASSWORD`
-   - `CORS_ORIGIN` — set to the host/port where the UI is served
-   - `DOCS_AUTH_ENABLED`, `DOCS_AUTH_USER`, `DOCS_AUTH_PASS` (optional)
+2. Generate real secrets and paste them into `.runtime/poi.env`.
+   Use the commands below — each generates a cryptographically random value:
 
-3. Validate the config:
+```bash
+# DB passwords
+openssl rand -hex 24   # → MARIADB_PASSWORD
+openssl rand -hex 24   # → MARIADB_ROOT_PASSWORD
+
+# JWT secrets
+openssl rand -hex 32   # → JWT_ACCESS_SECRET
+openssl rand -hex 32   # → JWT_REFRESH_SECRET
+
+# Application passwords
+openssl rand -hex 16   # → ADMIN_PASSWORD
+openssl rand -hex 16   # → DOCS_AUTH_PASS
+```
+
+3. Open `.runtime/poi.env` and replace **every** `change_me_*` value with the
+   generated strings. The full list of secrets to set:
+
+| Variable | Purpose |
+|---|---|
+| `MARIADB_PASSWORD` | MariaDB application user password |
+| `MARIADB_ROOT_PASSWORD` | MariaDB root password |
+| `JWT_ACCESS_SECRET` | unique random string |
+| `JWT_REFRESH_SECRET` | unique random string |
+| `ADMIN_PASSWORD` | your admin login password |
+| `DOCS_AUTH_PASS` | only needed if `DOCS_AUTH_ENABLED=true` |
+
+   Also set `CORS_ORIGIN` to the host/port where the UI is served (default: `http://localhost:9010`).
+
+4. Validate the config:
 
 ```bash
 ./scripts/env-check.sh
 ```
+
+All lines must print `[OK]` before proceeding.
 
 [Go to TOC](#table-of-contents)
 
@@ -162,7 +191,7 @@ Run the full integration suite:
 
 phpMyAdmin is available at `http://localhost:9010/phpmyadmin/`.
 
-- Log in with the `DB_USER` and `DB_PASSWORD` values from `.runtime/poi.env`.
+- Log in with the `MARIADB_USER` and `MARIADB_PASSWORD` values from `.runtime/poi.env`.
 - phpMyAdmin starts automatically as part of the stack.
 - It runs inside the poi pod and communicates with MariaDB over `127.0.0.1:3306`.
 

@@ -8,6 +8,7 @@ ContainerName=poi-db
 Image=docker.io/library/mariadb:11
 Pod=poi.pod
 Volume=poi-db-data:/var/lib/mysql:Z
+Volume=__PROJECT_ROOT__/db/init:/docker-entrypoint-initdb.d:Z,ro
 EnvironmentFile=__PROJECT_ROOT__/.runtime/poi.env
 
 [Service]

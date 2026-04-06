@@ -230,8 +230,8 @@ Covers:
 
 | Variable | Used by |
 |---|---|
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `migrate.sh`, `backup.sh`, `restore.sh`, `common.sh` (wait_for_db) |
-| `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD`, `MARIADB_ROOT_PASSWORD` | MariaDB container bootstrap (validated by `env-check.sh`) |
+| `DB_HOST`, `DB_PORT` | `migrate.sh`, `backup.sh`, `restore.sh`, `common.sh` (wait_for_db) |
+| `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD`, `MARIADB_ROOT_PASSWORD` | MariaDB container bootstrap; also used by `migrate.sh`, `backup.sh`, `restore.sh`, and `wait_for_db` (validated by `env-check.sh`) |
 | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE` | API auth (validated by `env-check.sh`) |
 | `ADMIN_USER`, `ADMIN_PASSWORD` | `test-integration.sh` login test |
 | `CORS_ORIGIN` | API CORS policy |

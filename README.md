@@ -60,10 +60,17 @@ them to `~/.config/containers/systemd/` before reloading the daemon.
 [Go to TOC](#table-of-contents)
 
 ## Quick Start
-1. Copy and configure environment:
+1. Copy the environment template and set **all** secrets (no `change_me_*` placeholders allowed):
    ```bash
+   mkdir -p .runtime
    cp .env.example .runtime/poi.env
-   # edit .runtime/poi.env — set all passwords and secrets
+   # Generate real values — example for each secret type:
+   #   openssl rand -hex 24   → MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD
+   #   openssl rand -hex 32   → JWT_ACCESS_SECRET, JWT_REFRESH_SECRET
+   #   openssl rand -hex 16   → ADMIN_PASSWORD, DOCS_AUTH_PASS
+   # Edit .runtime/poi.env and replace every change_me_* with generated values.
+   # See docs/INSTALL.md § Configure Environment for the full table.
+   ./scripts/env-check.sh   # must show [OK] for every variable
    ```
 2. Build local container images:
    ```bash

@@ -66,7 +66,21 @@ ensure_dirs() {
 ensure_env_file() {
   if [[ ! -f "${STACK_ENV_FILE}" ]]; then
     cp "${PROJECT_ROOT}/.env.example" "${STACK_ENV_FILE}"
-    warn "Created ${STACK_ENV_FILE}. Edit secrets before starting services."
+    printf '\n'
+    printf '[ERROR] %s\n' "No .runtime/poi.env found — created one from .env.example."
+    printf '[ERROR] %s\n' "You MUST replace every 'change_me_*' placeholder with a real secret before running install again."
+    printf '[ERROR] %s\n' "See docs/INSTALL.md § Configure Environment for the full list and generation commands."
+    printf '\n'
+    exit 1
+  fi
+
+  if grep -q 'change_me' "${STACK_ENV_FILE}"; then
+    printf '\n'
+    printf '[ERROR] %s\n' ".runtime/poi.env still contains 'change_me' placeholder values."
+    printf '[ERROR] %s\n' "Replace every placeholder with a real secret before starting services."
+    printf '[ERROR] %s\n' "See docs/INSTALL.md § Configure Environment for generation commands."
+    printf '\n'
+    exit 1
   fi
 }
 
@@ -93,15 +107,26 @@ load_env_file() {
 }
 
 wait_for_db() {
-  local timeout_seconds="${1:-90}"
+  local timeout_seconds="${1:-120}"
   local elapsed=0
   load_env_file
 
-until MYSQL_PWD="${DB_PASSWORD}" podman exec -e MYSQL_PWD poi-db mariadb-admin -u"${DB_USER}" ping --silent >/dev/null 2>&1; do
+  # Phase 1: wait for root ping (server is up)
+  until podman exec poi-db mariadb-admin -uroot ping --silent >/dev/null 2>&1; do
     sleep 2
     elapsed=$((elapsed + 2))
     if (( elapsed >= timeout_seconds )); then
-      die "Timed out waiting for DB readiness"
+      die "Timed out waiting for DB server to accept connections"
+    fi
+  done
+
+  # Phase 2: wait for poi_app@localhost to be usable (init scripts may still be running)
+  until MYSQL_PWD="${MARIADB_PASSWORD}" podman exec -e MYSQL_PWD poi-db \
+      mariadb -u"${MARIADB_USER}" "${MARIADB_DATABASE}" -e "SELECT 1" >/dev/null 2>&1; do
+    sleep 2
+    elapsed=$((elapsed + 2))
+    if (( elapsed >= timeout_seconds )); then
+      die "Timed out waiting for DB user '${MARIADB_USER}' to become accessible"
     fi
   done
 }

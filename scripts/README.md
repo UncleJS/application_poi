@@ -295,7 +295,7 @@ Loads `.runtime/poi.env` and checks that every required environment variable is 
 
 Called automatically by `install.sh`. Run manually after editing the env file to catch typos before restarting services.
 
-Required variables checked: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `MARIADB_*`, `JWT_*`, `ADMIN_USER`, `ADMIN_PASSWORD`, `CORS_ORIGIN`, `UPLOAD_MAX_BYTES`, `PHOTO_MAX_PER_POI`, `OSM_TILE_URL`, `OSM_ATTRIBUTION`, `DOCS_AUTH_*`, `NIGHTLY_LOG_RETAIN_COUNT`, `BACKUP_RETAIN_COUNT`.
+Required variables checked: `DB_HOST`, `DB_PORT`, `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD`, `MARIADB_ROOT_PASSWORD`, `JWT_*`, `ADMIN_USER`, `ADMIN_PASSWORD`, `CORS_ORIGIN`, `UPLOAD_MAX_BYTES`, `PHOTO_MAX_PER_POI`, `OSM_TILE_URL`, `OSM_ATTRIBUTION`, `DOCS_AUTH_*`, `NIGHTLY_LOG_RETAIN_COUNT`, `BACKUP_RETAIN_COUNT`.
 
 [Go to TOC](#table-of-contents)
 
@@ -401,7 +401,7 @@ Once started, phpMyAdmin is accessible at:
 http://localhost:9010/phpmyadmin/
 ```
 
-Log in with the MariaDB credentials from `.runtime/poi.env` (`DB_USER` / `DB_PASSWORD`).
+Log in with the MariaDB credentials from `.runtime/poi.env` (`MARIADB_USER` / `MARIADB_PASSWORD`).
 
 [Go to TOC](#table-of-contents)
 
